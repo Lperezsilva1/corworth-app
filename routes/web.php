@@ -3,14 +3,18 @@
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 use App\Livewire\Salesperson;
+use App\Livewire\Drafters\Drafters;
 
 
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+//FOR DRAFTER
 
-Route::get('/salesperson', Salesperson::class)->name('salesperson.index');
+Route::get('/drafter', Drafters::class)->name('drafter.index');
+
+// END DRAFTER
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark" data-theme="wireframe">
     <head>
         @include('partials.head')
     </head>
@@ -14,6 +14,7 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                      <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                
                      <flux:navlist.item icon="calendar" href="#">Proyects</flux:navlist.item>
                 </flux:navlist.group>
 
@@ -21,10 +22,9 @@
                 <flux:navlist.group expandable heading="Master" class="hidden lg:grid">
     <flux:navlist.item href="#" >Models</flux:navlist.item>
 
-    <flux:navlist.item  :href="route('salesperson.index')"    :current="request()->routeIs('salesperson.*')"   wire:navigate>  Sales People
-    </flux:navlist.item>
+   
 
-    <flux:navlist.item href="#" >Drafter</flux:navlist.item>
+    <flux:navlist.item :href="route('drafter.index')" :current="request()->routeIs('drafter.index')" wire:navigate>Drafter</flux:navlist.item>
     <flux:navlist.item href="#" >Task</flux:navlist.item>
 </flux:navlist.group>
 
