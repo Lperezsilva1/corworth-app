@@ -9,6 +9,7 @@ use PowerComponents\LivewirePowerGrid\Button;
 use PowerComponents\LivewirePowerGrid\Column;
 use PowerComponents\LivewirePowerGrid\Facades\Filter;
 use PowerComponents\LivewirePowerGrid\Facades\PowerGrid;
+use PowerComponents\LivewirePowerGrid\Facades\Rule;
 use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 
@@ -43,6 +44,11 @@ final class DraftersTable extends PowerGridComponent
     {
         return PowerGrid::fields()
             ->add('id')
+            ->add('name_drafter')
+            ->add('description_drafter')
+             ->add('status_text', fn ($drafter) => $drafter->status 
+                     ? '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Enabled</span>'
+                     : '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Disabled</span>')
             ->add('created_at');
     }
 
@@ -61,9 +67,10 @@ final class DraftersTable extends PowerGridComponent
                 ->searchable(),
 
             // Columna Status (booleano)
-            Column::make('Status', 'status')
-                ->toggleable(), // así puedes activar/desactivar directo desde la tabla
-                               // también puedes usar ->sortable() y ->searchable()
+            Column::make('Status', 'status_text')
+                    ->sortable()
+                    ->searchable()
+                    ->bodyAttribute('text-center'),
 
             // Columna Created At
             Column::make('Created At', 'created_at')
