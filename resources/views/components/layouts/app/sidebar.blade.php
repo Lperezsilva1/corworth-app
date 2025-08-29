@@ -24,7 +24,7 @@
 
    
 
-    <flux:navlist.item :href="route('drafter.index')" :current="request()->routeIs('drafter.index')" wire:navigate>Drafter</flux:navlist.item>
+    <flux:navlist.item :href="route('drafters.index')" :current="request()->routeIs('drafters.index')" wire:navigate>Drafter</flux:navlist.item>
     <flux:navlist.item href="#" >Task</flux:navlist.item>
 </flux:navlist.group>
 
@@ -141,5 +141,20 @@
         {{ $slot }}
 
         @fluxScripts
+
+
+<div
+  x-data="{ show: false, message: '' }"
+  x-on:notify.window="message = $event.detail; show = true; setTimeout(() => show = false, 7000)"
+  class="fixed top-4 right-4 z-50"
+>
+  <div
+    x-show="show"
+    x-transition
+    class="mb-4 rounded-md bg-green-500/10 text-green-700 px-4 py-2 text-sm border border-green-500/30"
+  >
+    <span x-text="message"></span>
+  </div>
+</div>
     </body>
 </html>

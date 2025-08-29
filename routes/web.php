@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 use App\Livewire\Salesperson;
 use App\Livewire\Drafters\Drafters;
+use App\Livewire\Drafters\DraftersFormulario;
+ 
+
 
 
 Route::get('/', function () {
@@ -11,9 +14,8 @@ Route::get('/', function () {
 })->name('home');
 
 //FOR DRAFTER
-
-Route::get('/drafter', Drafters::class)->name('drafter.index');
-
+Route::get('/drafters', Drafters::class)->name('drafters.index');
+Route::get('/drafters/create', DraftersFormulario::class)->name('drafters.create');
 // END DRAFTER
 
 Route::view('dashboard', 'dashboard')
