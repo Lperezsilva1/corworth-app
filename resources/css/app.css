@@ -52,6 +52,7 @@
     }
 }
 
+
 [data-flux-field]:not(ui-radio, ui-checkbox) {
     @apply grid gap-2;
 }
@@ -72,3 +73,6 @@ select:focus[data-flux-control] {
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+html {
+    overflow-y: scroll;
+}

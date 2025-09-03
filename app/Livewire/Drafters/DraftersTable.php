@@ -55,8 +55,10 @@ final class DraftersTable extends PowerGridComponent
     public function columns(): array
     {
         return [
-            Column::make('Id', 'id'),
-                // Columna Name
+            Column::make('#', 'id')
+                  ->index() // 👈 esto genera el contador
+                  ->bodyAttribute('text-center'),
+
             Column::make('Name', 'name_drafter')
                 ->sortable()
                 ->searchable(),
@@ -93,15 +95,21 @@ final class DraftersTable extends PowerGridComponent
     }
 
     public function actions(Drafter $row): array
-    {
-        return [
-            Button::add('edit')
-                ->slot('Edit: '.$row->id)
-                ->id()
-                ->class('pg-btn-white dark:ring-pg-primary-600 dark:border-pg-primary-600 dark:hover:bg-pg-primary-700 dark:ring-offset-pg-primary-800 dark:text-pg-primary-300 dark:bg-pg-primary-700')
-                ->dispatch('edit', ['rowId' => $row->id])
-        ];
-    }
+{
+    return [
+        Button::add('edit')
+            ->slot('Edit')       // Texto del botón
+            ->id()                  // asigna el id del row
+            ->class('btn btn-sm btn-soft')
+            ->dispatch('open-drafter-modal', ['drafterId' => $row->id]),
+
+            Button::add('delete')
+            ->slot('🗑 Delete')
+            ->id()
+            ->class('btn btn-sm btn-error')
+            ->dispatch('delete-drafter', ['drafterId' => $row->id]),
+    ];
+}
 
     /*
     public function actionRules($row): array

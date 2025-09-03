@@ -1,15 +1,17 @@
 <?php
 
 namespace App\Models;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Drafter extends Model
 {
+    use HasFactory;
+    use SoftDeletes; // 👈 habilita Soft Delete
 
-   use HasFactory; 
-   protected $table = 'drafters';
+    protected $table = 'drafters'; // tabla en BD
 
     protected $fillable = [
         'name_drafter',
@@ -17,14 +19,13 @@ class Drafter extends Model
         'status',
     ];
 
-      protected $casts = [
-        'status' => 'boolean',
+    protected $casts = [
+        'status' => 'boolean', // para que siempre lo recibas como true/false
     ];
 
-    // Útil para listar solo activos: Drafter::active()->get()
+    // 👇 Ejemplo de scope: solo drafters activos
     public function scopeActive($query)
     {
         return $query->where('status', true);
     }
-    
 }
