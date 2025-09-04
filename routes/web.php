@@ -7,9 +7,9 @@ use App\Livewire\Drafters\Drafters;
 use App\Livewire\Drafters\DraftersFormulario;
 use App\Livewire\Sellers\Sellers;
 use App\Livewire\Sellers\SellersFormulario;
-
+use App\Livewire\Buildings\Buildings;
+use App\Livewire\Buildings\BuildingFormulario;
  
-
 
 
 Route::get('/', function () {
@@ -25,6 +25,11 @@ Route::get('/drafters/create', DraftersFormulario::class)->name('drafters.create
 Route::get('/sellers', Sellers::class)->name('sellers.index');
 Route::get('/sellers/create', SellersFormulario::class)->name('sellers.create');
 // END SELLER
+
+//FOR BUILDING
+Route::get('/buildings', Buildings::class)->name('buildings.index');
+Route::get('/buildings/create', BuildingFormulario::class)->name('buildings.create');
+// END BUILDING
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])

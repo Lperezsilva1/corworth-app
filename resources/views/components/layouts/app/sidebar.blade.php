@@ -20,13 +20,13 @@
 
 
                 <flux:navlist.group expandable heading="Master" class="hidden lg:grid">
-    <flux:navlist.item href="#" >Models</flux:navlist.item>
+  
 
    
 
     <flux:navlist.item :href="route('drafters.index')" :current="request()->routeIs('drafters.index')" wire:navigate>Drafters</flux:navlist.item>
     <flux:navlist.item :href="route('sellers.index')" :current="request()->routeIs('sellers.index')" wire:navigate>Sellers</flux:navlist.item>
-    <flux:navlist.item href="#" >Task</flux:navlist.item>
+    <flux:navlist.item :href="route('buildings.index')" :current="request()->routeIs('buildings.index')" wire:navigate>Models</flux:navlist.item>
 </flux:navlist.group>
 
             </flux:navlist>
