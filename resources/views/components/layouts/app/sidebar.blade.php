@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" >
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="nord" class="wireframe">
     <head>
         @include('partials.head')
     </head>
@@ -24,7 +24,8 @@
 
    
 
-    <flux:navlist.item :href="route('drafters.index')" :current="request()->routeIs('drafters.index')" wire:navigate>Drafter</flux:navlist.item>
+    <flux:navlist.item :href="route('drafters.index')" :current="request()->routeIs('drafters.index')" wire:navigate>Drafters</flux:navlist.item>
+    <flux:navlist.item :href="route('sellers.index')" :current="request()->routeIs('sellers.index')" wire:navigate>Sellers</flux:navlist.item>
     <flux:navlist.item href="#" >Task</flux:navlist.item>
 </flux:navlist.group>
 
@@ -52,6 +53,7 @@
 
                 <flux:menu class="w-[220px]">
                     <flux:menu.radio.group>
+                        
                         <div class="p-0 text-sm font-normal">
                             <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                                 <span class="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-lg">
@@ -102,6 +104,7 @@
 
                 <flux:menu>
                     <flux:menu.radio.group>
+                        
                         <div class="p-0 text-sm font-normal">
                             <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                                 <span class="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-lg">

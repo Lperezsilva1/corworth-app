@@ -76,3 +76,66 @@ select:focus[data-flux-control] {
 html {
     overflow-y: scroll;
 }
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: 
+wireframe --default, dark --prefersdark, cupcake;
+}
+
+
+
+
+@import '../../vendor/livewire/flux/dist/flux.css';
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    
+}
+@layer theme {
+    .dark {
+        --color-accent: var(--color-white);
+        --color-accent-content: var(--color-white);
+       
+    }
+}
+@import "tailwindcss";
+/* Forzar anillo y borde BLANCOS SOLO dentro del wrapper y SOLO en dark */
+:root[data-theme="dark"] .flux-white-ring *,
+.dark .flux-white-ring * {
+  /* Ring blanco y sin offset de colores */
+
+  /* Apagar box-shadow “cian” si lo usaran para ring */
+  box-shadow: 0 0 0 0 #0000 !important;
+
+  /* Por si usan outline en vez de ring */
+  outline-color: #ffffff !important;
+  outline-width: 0 !important; /* si quieres sólo ring */
+}
+
+/* Borde y texto blanco en el control principal (por si hace falta) */
+:root[data-theme="dark"] .flux-white-ring flux-select,
+.dark .flux-white-ring flux-select {
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Cubre casos típicos del "trigger" interno del select */
+:root[data-theme="dark"] .flux-white-ring flux-select [role="combobox"],
+:root[data-theme="dark"] .flux-white-ring flux-select button,
+:root[data-theme="dark"] .flux-white-ring flux-select .focus\:ring-2,
+:root[data-theme="dark"] .flux-white-ring flux-select .ring-2,
+:root[data-theme="dark"] .flux-white-ring flux-select .ring,
+:root[data-theme="dark"] .flux-white-ring flux-select .ring-primary,
+:root[data-theme="dark"] .flux-white-ring flux-select .ring-accent {
+  --tw-ring-color: #ffffff !important;
+  border-color: #ffffff !important;
+  outline: none !important;
+  box-shadow: 0 0 0 0 #0000 !important;
+}
+
+/* (Opcional) Items activos en el menú: fondo gris oscuro, texto claro */
+:root[data-theme="dark"] .flux-white-ring flux-select [role="option"][aria-selected="true"],
+:root[data-theme="dark"] .flux-white-ring flux-select [data-active] {
+  background-color: hsl(var(--b3)) !important; /* base-300 */
+  color: hsl(var(--bc)) !important;            /* base-content */
+}

@@ -5,6 +5,9 @@ use Livewire\Volt\Volt;
 use App\Livewire\Salesperson;
 use App\Livewire\Drafters\Drafters;
 use App\Livewire\Drafters\DraftersFormulario;
+use App\Livewire\Sellers\Sellers;
+use App\Livewire\Sellers\SellersFormulario;
+
  
 
 
@@ -17,6 +20,11 @@ Route::get('/', function () {
 Route::get('/drafters', Drafters::class)->name('drafters.index');
 Route::get('/drafters/create', DraftersFormulario::class)->name('drafters.create');
 // END DRAFTER
+
+//FOR SELLER
+Route::get('/sellers', Sellers::class)->name('sellers.index');
+Route::get('/sellers/create', SellersFormulario::class)->name('sellers.create');
+// END SELLER
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
