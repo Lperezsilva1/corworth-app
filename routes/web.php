@@ -9,6 +9,10 @@ use App\Livewire\Sellers\Sellers;
 use App\Livewire\Sellers\SellersFormulario;
 use App\Livewire\Buildings\Buildings;
 use App\Livewire\Buildings\BuildingFormulario;
+use App\Livewire\Projects\Projects;           // índice + modal
+use App\Livewire\Projects\ProjectFormulario;  // página de creación
+use App\Livewire\Projects\ProjectsShow;  // página de creación
+
  
 
 
@@ -30,6 +34,15 @@ Route::get('/sellers/create', SellersFormulario::class)->name('sellers.create');
 Route::get('/buildings', Buildings::class)->name('buildings.index');
 Route::get('/buildings/create', BuildingFormulario::class)->name('buildings.create');
 // END BUILDING
+
+//FOR PROJECT
+Route::get('/projects', Projects::class)->name('projects.index');
+Route::get('/projects/create', ProjectFormulario::class)->name('projects.create');
+Route::get('/projects/{project}', ProjectsShow::class)->name('projects.show');          // <- detalle
+Route::get('/projects/{project}/edit', ProjectFormulario::class)->name('projects.edit');
+
+// END PROJECT
+
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])

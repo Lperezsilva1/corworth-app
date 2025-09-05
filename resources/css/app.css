@@ -83,8 +83,6 @@ wireframe --default, dark --prefersdark, cupcake;
 }
 
 
-
-
 @import '../../vendor/livewire/flux/dist/flux.css';
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -139,3 +137,91 @@ wireframe --default, dark --prefersdark, cupcake;
   background-color: hsl(var(--b3)) !important; /* base-300 */
   color: hsl(var(--bc)) !important;            /* base-content */
 }
+/* Quitar el borde y redondeo del contenedor de todas las tablas PowerGrid */
+.power-grid .border,
+.power-grid .rounded,
+.power-grid .rounded-md,
+.power-grid .rounded-lg {
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+/* Quitar sombra */
+.power-grid .shadow,
+.power-grid .shadow-sm,
+.power-grid .shadow-md,
+.power-grid .shadow-lg {
+  box-shadow: none !important;
+}
+
+@layer utilities {
+  :root{
+    --pg-bb-color: #e5e7eb; /* gris claro (gray-200) */
+    --pg-bb-width: 1px;     /* grosor fino */
+    --pg-radius: 8px;       /* si quieres esquinas suaves */
+    
+    --pg-border-color: #e5e7eb; /* gray-200 */
+    --pg-border-width: 1px;
+    
+  }
+  }
+
+  /* Header: borde fino arriba + laterales */
+  .power-grid .overflow-auto.rounded-t-lg.relative.border-x.border-t.border-base-300{
+    border-left: var(--pg-bb-width) solid var(--pg-bb-color) !important;
+    border-right: var(--pg-bb-width) solid var(--pg-bb-color) !important;
+    border-top: var(--pg-bb-width) solid var(--pg-bb-color) !important;
+    border-top-left-radius: var(--pg-radius) !important;
+    border-top-right-radius: var(--pg-radius) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Footer: solo afinamos border-b (y opcional laterales) */
+  .power-grid #pg-footer.border-x.border-b{
+    border-bottom: var(--pg-bb-width) solid var(--pg-bb-color) !important;
+    /* descomenta si quieres igualar laterales:
+    border-left:  var(--pg-bb-width) solid var(--pg-bb-color) !important;
+    border-right: var(--pg-bb-width) solid var(--pg-bb-color) !important; */
+    border-bottom-left-radius: var(--pg-radius) !important;
+    border-bottom-right-radius: var(--pg-radius) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Por si existe un wrapper inferior extra con border-b */
+  .power-grid .rounded-b-lg.border-x.border-b.border-base-300{
+    border-bottom: var(--pg-bb-width) solid var(--pg-bb-color) !important;
+    /* si no quieres línea abajo, pon: border-bottom: 0 !important; */
+    border-bottom-left-radius: var(--pg-radius) !important;
+    border-bottom-right-radius: var(--pg-radius) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+
+  }
+
+  /* Header (laterales + arriba) */
+  .overflow-auto.rounded-t-lg.relative.border-x.border-t.border-base-300{
+    border-left-width: var(--pg-border-width) !important;
+    border-right-width: var(--pg-border-width) !important;
+    border-top-width: var(--pg-border-width) !important;
+    border-color: var(--pg-border-color) !important;
+    border-top-left-radius: var(--pg-radius) !important;
+    border-top-right-radius: var(--pg-radius) !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+
+/* Quitar borde/sombra/redondeo del FOOTER de PowerGrid */
+ #pg-footer{
+    border-left-width: var(--pg-border-width) !important;
+    border-right-width: var(--pg-border-width) !important;
+    border-bottom-width: var(--pg-border-width) !important; /* pon 0 si no quieres línea abajo */
+    border-color: var(--pg-border-color) !important;
+    border-bottom-left-radius: var(--pg-radius) !important;
+    border-bottom-right-radius: var(--pg-radius) !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+
+
