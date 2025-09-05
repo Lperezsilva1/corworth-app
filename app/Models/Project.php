@@ -61,10 +61,10 @@ class Project extends Model
         return $this->belongsTo(Drafter::class, 'fullset_drafter_id');
     }
 
-    // Notas (si usas la tabla project_notes)
-    public function notes()
+   
+    public function comments()
     {
-        return $this->hasMany(ProjectNote::class)->latest();
+        return $this->hasMany(ProjectComment::class)->latest();
     }
 
     /* =====================

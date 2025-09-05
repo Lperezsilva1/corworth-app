@@ -3,8 +3,10 @@
 namespace App\Livewire\Projects;
 
 use Livewire\Component;
+use App\Models\ProjectComment;
 use App\Models\{Project, Building, Seller, Drafter};
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\On;
 
 class ProjectsShow extends Component
 {
@@ -41,6 +43,8 @@ class ProjectsShow extends Component
     public array $phase1StatusOptions  = ['Not started','In progress','Blocked',"Phase 1's Complete"];
     public array $fullsetStatusOptions = ['Not started','In progress','Blocked','Full Set Complete'];
     public array $generalStatusOptions = ['Not Approved','Approved','Cancelled'];
+
+    public int $commentsVersion = 0;
 
     public function mount(Project $project): void
     {
@@ -107,16 +111,54 @@ class ProjectsShow extends Component
     }
 
     /** Guardar todo desde los tabs */
-    public function saveEdit(): void
-    {
-        $data = $this->validate();
+  public function saveEdit(): void
+{
+    $data = $this->validate();
 
-        $this->project->update($data);
-        $this->project->refresh()->load(['building','seller','drafterPhase1','drafterFullset']);
+    // 1) Campos que quieres auditar
+    $track = [
+        'building_id','seller_id',
+        'phase1_drafter_id','phase1_status','phase1_start_date','phase1_end_date',
+        'fullset_drafter_id','fullset_status','fullset_start_date','fullset_end_date',
+        'general_status','notes',
+    ];
 
-        $this->editing = false;
-        session()->flash('success', 'Project updated.');
+    // 2) Tomar snapshot ANTES
+    $before = $this->project->only($track);
+
+    // 3) Guardar cambios
+    $this->project->update($data);
+
+    // 4) Tomar snapshot DESPUÉS
+    $after = $this->project->fresh()->only($track);
+
+    // 5) Armar diff y registrar comentario
+    $changes = [];
+    foreach ($after as $k => $v) {
+        $prev = $before[$k] ?? null;
+        if ($prev != $v) {
+            $prevTxt = ($prev === null || $prev === '') ? '—' : (is_string($prev) ? $prev : (string) $prev);
+            $newTxt  = ($v === null || $v === '') ? '—' : (is_string($v) ? $v : (string) $v);
+            $changes[] = "$k: {$prevTxt} → {$newTxt}";
+        }
     }
+
+   if ($changes) {
+    ProjectComment::create([
+        'project_id' => $this->project->id,
+        'user_id'    => auth()->id(),   // quién disparó la acción (útil mantenerlo)
+        'body'       => "Updated fields:\n- " . implode("\n- ", $changes),
+        'is_system'  => true,           // ✅ lo marca como automático
+        'source'     => 'auto_diff',    // opcional: nombre de la “fuente”
+    ]);
+}
+
+    // 6) Refrescar UI
+    $this->commentsVersion++;
+    $this->project->refresh()->load(['building','seller','drafterPhase1','drafterFullset']);
+    $this->editing = false;
+    session()->flash('success', 'Project updated.');
+}
 
     public function startEdit(): void { $this->editing = true; }
     public function cancelEdit(): void

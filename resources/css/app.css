@@ -224,4 +224,67 @@ wireframe --default, dark --prefersdark, cupcake;
     background-color: transparent !important;
   }
 
+  .chat-bubble{
+    position: relative;
+  }
+  .chat-start .chat-bubble::after{
+    content:""; position:absolute; left:-6px; top:12px;
+    border:6px solid transparent; border-right-color:currentColor; opacity:.15;
+  }
+  .chat-end .chat-bubble::after{
+    content:""; position:absolute; right:-6px; top:12px;
+    border:6px solid transparent; border-left-color:currentColor; opacity:.15;
+  }
+  /* Left-rail para DaisyUI timeline vertical */
+  .timeline.timeline-vertical.timeline-left{
+    /* Columna 1: fecha (pastilla)  | Columna 2: rail/dot | Columna 3: contenido */
+    grid-template-columns: 6.5rem 1.25rem 1fr !important;
+  }
+  /* Asegura el posicionamiento de cada parte */
+  .timeline.timeline-vertical.timeline-left .timeline-start{
+    grid-column: 1 !important;
+    justify-self: end;       /* fecha alineada a la derecha de su columna */
+    padding-right: .25rem;
+  }
+  .timeline.timeline-vertical.timeline-left .timeline-middle{
+    grid-column: 2 !important;
+    justify-self: center;    /* dot centrado en su columna */
+  }
+  .timeline.timeline-vertical.timeline-left .timeline-end{
+    grid-column: 3 !important;
+    justify-self: start;     /* tarjeta pegada a la izquierda de su columna */
+  }
 
+  /* (Opcional) reduce un poco el ancho de la pastilla si la quieres más compacta */
+  .timeline.timeline-vertical.timeline-left .timeline-start > span{
+    white-space: nowrap;
+  }
+
+ /* Alinear el timeline vertical hacia la izquierda (DaisyUI) */
+  .timeline.timeline-vertical.timeline-left li{
+    /* Col 1: fecha | Col 2: rail/dot | Col 3: tarjeta */
+    display: grid;
+    grid-template-columns: 6.5rem 1.25rem 1fr !important;
+    align-items: start;
+  }
+
+  .timeline.timeline-vertical.timeline-left li .timeline-start{
+    grid-column: 1 !important;
+    justify-self: end;
+    padding-right: .25rem;
+  }
+
+  .timeline.timeline-vertical.timeline-left li .timeline-middle{
+    grid-column: 2 !important;
+    justify-self: center;
+  }
+
+  .timeline.timeline-vertical.timeline-left li .timeline-end{
+    grid-column: 3 !important;
+    justify-self: start; /* pega la tarjeta al margen izquierdo de su columna */
+  }
+
+  /* Asegura que los separadores <li><hr/></li> sigan el rail central */
+  .timeline.timeline-vertical.timeline-left li hr{
+    grid-column: 2 !important;
+  }

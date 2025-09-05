@@ -266,14 +266,9 @@
     <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Notes" />
     <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-5">
       <flux:subheading size="md" class="font-semibold mb-3">Notes</flux:subheading>
-      @if($editing)
-        <textarea class="textarea textarea-bordered w-full" rows="6" wire:model.defer="notes"
-                  placeholder="Project notes"></textarea>
-        @error('notes') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
-      @else
-        <div class="text-sm text-base-content/70 mb-1">Project notes</div>
-        <div class="font-medium whitespace-pre-line">{{ $project->notes ?: '—' }}</div>
-      @endif
+
+      <livewire:projects.project-comments :projectId="$project->id" :key="'comments-'.$project->id.'-'.$commentsVersion"/>
+      
     </div>
 
   </div>
