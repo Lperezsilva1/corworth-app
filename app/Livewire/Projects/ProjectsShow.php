@@ -3,11 +3,8 @@
 namespace App\Livewire\Projects;
 
 use Livewire\Component;
-use App\Models\ProjectComment;
-use App\Models\{Project, Building, Seller, Drafter};
+use App\Models\{Project, Building, Seller, Drafter, ProjectComment};
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
-use Illuminate\Support\Carbon;
 
 class ProjectsShow extends Component
 {
@@ -22,8 +19,7 @@ class ProjectsShow extends Component
     public $sellers   = [];
     public $drafters  = [];
 
-    /** Campos editables (coinciden con $fillable) */
-    // Nota: mantenemos Project Name en solo lectura (como preferiste)
+    /** Campos editables existentes */
     public $building_id = null;
     public $seller_id   = null;
 
@@ -40,24 +36,45 @@ class ProjectsShow extends Component
     public ?string $general_status = null;
     public ?string $notes = null;
 
-    /** Opciones de estado */
+    /** Opciones de estado (ejemplo) */
     public array $phase1StatusOptions  = ['Not started','In progress','Blocked',"Phase 1's Complete"];
     public array $fullsetStatusOptions = ['Not started','In progress','Blocked','Full Set Complete'];
     public array $generalStatusOptions = ['Not Approved','Approved','Cancelled'];
 
+    /** ← NUEVO: 7 ítems (6 fijos + Otro) */
+    // OK flags
+    public ?bool $seller_door_ok = null;
+    public ?bool $seller_accessories_ok = null;
+    public ?bool $seller_exterior_finish_ok = null;
+    public ?bool $seller_plumbing_fixture_ok = null;
+    public ?bool $seller_utility_direction_ok = null;
+    public ?bool $seller_electrical_ok = null;
+    public ?bool $other_ok = null;
+
+    // Notas
+    public ?string $seller_door_notes = null;
+    public ?string $seller_accessories_notes = null;
+    public ?string $seller_exterior_finish_notes = null;
+    public ?string $seller_plumbing_fixture_notes = null;
+    public ?string $seller_utility_direction_notes = null;
+    public ?string $seller_electrical_notes = null;
+
+    // “Otro”
+    public ?string $other_label = null;
+    public ?string $other_notes = null;
+
+    /** Para refrescar comments si los usas */
     public int $commentsVersion = 0;
 
     public function mount(Project $project): void
     {
-        // Modelo + relaciones
         $this->project = $project->load(['building','seller','drafterPhase1','drafterFullset']);
 
-        // Listas
         $this->buildings = Building::orderBy('name_building')->get(['id','name_building']);
         $this->sellers   = Seller::orderBy('name_seller')->get(['id','name_seller']);
         $this->drafters  = Drafter::orderBy('name_drafter')->get(['id','name_drafter']);
 
-        // Hidratar campos (para edición)
+        // Hidratar campos
         $p = $this->project;
         $this->building_id         = $p->building_id;
         $this->seller_id           = $p->seller_id;
@@ -74,11 +91,31 @@ class ProjectsShow extends Component
 
         $this->general_status      = $p->general_status;
         $this->notes               = $p->notes;
+
+        // ← NUEVO: 7 ítems
+        $this->seller_door_ok              = $p->seller_door_ok;
+        $this->seller_accessories_ok       = $p->seller_accessories_ok;
+        $this->seller_exterior_finish_ok   = $p->seller_exterior_finish_ok;
+        $this->seller_plumbing_fixture_ok  = $p->seller_plumbing_fixture_ok;
+        $this->seller_utility_direction_ok = $p->seller_utility_direction_ok;
+        $this->seller_electrical_ok        = $p->seller_electrical_ok;
+        $this->other_ok                    = $p->other_ok;
+
+        $this->seller_door_notes              = $p->seller_door_notes;
+        $this->seller_accessories_notes       = $p->seller_accessories_notes;
+        $this->seller_exterior_finish_notes   = $p->seller_exterior_finish_notes;
+        $this->seller_plumbing_fixture_notes  = $p->seller_plumbing_fixture_notes;
+        $this->seller_utility_direction_notes = $p->seller_utility_direction_notes;
+        $this->seller_electrical_notes        = $p->seller_electrical_notes;
+
+        $this->other_label = $p->other_label;
+        $this->other_notes = $p->other_notes;
     }
 
     public function rules(): array
     {
         return [
+            // existentes
             'building_id'        => ['nullable','integer','exists:buildings,id'],
             'seller_id'          => ['nullable','integer','exists:sellers,id'],
 
@@ -94,15 +131,39 @@ class ProjectsShow extends Component
 
             'general_status'     => ['nullable','string', Rule::in($this->generalStatusOptions)],
             'notes'              => ['nullable','string'],
+
+            // ← NUEVO: 7 ítems
+            'seller_door_ok'              => ['nullable','boolean'],
+            'seller_accessories_ok'       => ['nullable','boolean'],
+            'seller_exterior_finish_ok'   => ['nullable','boolean'],
+            'seller_plumbing_fixture_ok'  => ['nullable','boolean'],
+            'seller_utility_direction_ok' => ['nullable','boolean'],
+            'seller_electrical_ok'        => ['nullable','boolean'],
+            'other_ok'                    => ['nullable','boolean'],
+
+            // Notas (si está PENDIENTE → obligatoria)
+            'seller_door_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_door_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Puerta.'); }],
+            'seller_accessories_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_accessories_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Accesorios.'); }],
+            'seller_exterior_finish_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_exterior_finish_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Exterior Finish.'); }],
+            'seller_plumbing_fixture_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_plumbing_fixture_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Plumbing Fixture.'); }],
+            'seller_utility_direction_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_utility_direction_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Utility Direction.'); }],
+            'seller_electrical_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_electrical_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Eléctrica.'); }],
+
+            // Otro
+            'other_label' => ['nullable','string','max:120'],
+            'other_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->other_ok === false && trim((string)$val)==='') $fail('Describe qué falta en “Otro”.'); }],
         ];
     }
 
     protected function prepareForValidation($attributes)
     {
-        // Normaliza selects vacíos a null
+        // Normaliza selects/strings vacíos a null
         foreach ([
             'building_id','seller_id','phase1_drafter_id','fullset_drafter_id',
-            'phase1_status','fullset_status','general_status'
+            'phase1_status','fullset_status','general_status',
+            'seller_door_notes','seller_accessories_notes','seller_exterior_finish_notes',
+            'seller_plumbing_fixture_notes','seller_utility_direction_notes','seller_electrical_notes',
+            'other_label','other_notes'
         ] as $key) {
             if (array_key_exists($key, $attributes) && $attributes[$key] === '') {
                 $attributes[$key] = null;
@@ -111,136 +172,107 @@ class ProjectsShow extends Component
         return $attributes;
     }
 
-    /** Guardar todo desde los tabs */
+    /** Botón “Quitar” en la sección Otro */
+    public function clearOther(): void
+    {
+        $this->other_ok    = null;
+        $this->other_label = null;
+        $this->other_notes = null;
+    }
+
+    /** Guardar todo + auditoría */
     public function saveEdit(): void
     {
         $data = $this->validate();
 
-        // 1) Campos que quieres auditar
+        // Campos a auditar (incluye los 7 ítems)
         $track = [
             'building_id','seller_id',
             'phase1_drafter_id','phase1_status','phase1_start_date','phase1_end_date',
             'fullset_drafter_id','fullset_status','fullset_start_date','fullset_end_date',
             'general_status','notes',
+
+            'seller_door_ok','seller_door_notes',
+            'seller_accessories_ok','seller_accessories_notes',
+            'seller_exterior_finish_ok','seller_exterior_finish_notes',
+            'seller_plumbing_fixture_ok','seller_plumbing_fixture_notes',
+            'seller_utility_direction_ok','seller_utility_direction_notes',
+            'seller_electrical_ok','seller_electrical_notes',
+            'other_ok','other_label','other_notes',
         ];
 
-        // 2) Tomar snapshot ANTES
         $before = $this->project->only($track);
 
-        // 3) Guardar cambios
+        // Guardar
         $this->project->update($data);
 
-        // 4) Tomar snapshot DESPUÉS
         $after = $this->project->fresh()->only($track);
 
-        // 5) Armar diff legible (IDs -> nombres, fechas y labels bonitos)
-
-        // Labels para mostrar
-        $labels = [
-            'building_id'        => 'Building',
-            'seller_id'          => 'Seller',
-            'phase1_drafter_id'  => 'Phase 1 Drafter',
-            'phase1_status'      => "Phase 1 Status",
-            'phase1_start_date'  => "Phase 1 Start",
-            'phase1_end_date'    => "Phase 1 End",
-            'fullset_drafter_id' => 'Fullset Drafter',
-            'fullset_status'     => 'Fullset Status',
-            'fullset_start_date' => "Fullset Start",
-            'fullset_end_date'   => "Fullset End",
-            'general_status'     => 'General Status',
-            'notes'              => 'Notes',
+        // Diff legible
+        $changes = [];
+        $labelMap = [
+            'seller_door_ok' => 'Puerta',
+            'seller_accessories_ok' => 'Accesorios',
+            'seller_exterior_finish_ok' => 'Exterior Finish',
+            'seller_plumbing_fixture_ok' => 'Plumbing Fixture',
+            'seller_utility_direction_ok' => 'Utility Direction',
+            'seller_electrical_ok' => 'Eléctrica',
+            'seller_door_notes' => 'Puerta (nota)',
+            'seller_accessories_notes' => 'Accesorios (nota)',
+            'seller_exterior_finish_notes' => 'Exterior Finish (nota)',
+            'seller_plumbing_fixture_notes' => 'Plumbing Fixture (nota)',
+            'seller_utility_direction_notes' => 'Utility Direction (nota)',
+            'seller_electrical_notes' => 'Eléctrica (nota)',
+            'other_ok' => 'Otro',
+            'other_label' => 'Otro (título)',
+            'other_notes' => 'Otro (nota)',
         ];
 
-        // Campos fecha
-        $dateFields = [
-            'phase1_start_date','phase1_end_date',
-            'fullset_start_date','fullset_end_date',
-        ];
-
-        // Prepara IDs únicos para resolver nombres (evita N+1)
-        $buildingIds = collect([$before['building_id'] ?? null, $after['building_id'] ?? null])
-            ->filter()->unique()->values();
-        $sellerIds   = collect([$before['seller_id'] ?? null, $after['seller_id'] ?? null])
-            ->filter()->unique()->values();
-        $drafterIds  = collect([
-            $before['phase1_drafter_id'] ?? null, $after['phase1_drafter_id'] ?? null,
-            $before['fullset_drafter_id'] ?? null, $after['fullset_drafter_id'] ?? null,
-        ])->filter()->unique()->values();
-
-        // Mapas id -> nombre
-        $buildingMap = $buildingIds->isNotEmpty()
-            ? Building::whereIn('id', $buildingIds)->pluck('name_building', 'id')
-            : collect();
-        $sellerMap   = $sellerIds->isNotEmpty()
-            ? Seller::whereIn('id', $sellerIds)->pluck('name_seller', 'id')
-            : collect();
-        $drafterMap  = $drafterIds->isNotEmpty()
-            ? Drafter::whereIn('id', $drafterIds)->pluck('name_drafter', 'id')
-            : collect();
-
-        // Formateador de valores bonitos por campo
-        $pretty = function (string $field, $value) use ($dateFields, $buildingMap, $sellerMap, $drafterMap) {
-            if ($value === null || $value === '') {
-                return '—';
-            }
-
-            // IDs -> nombres
-            if ($field === 'building_id')        return (string) ($buildingMap[$value] ?? $value);
-            if ($field === 'seller_id')          return (string) ($sellerMap[$value]   ?? $value);
-            if ($field === 'phase1_drafter_id')  return (string) ($drafterMap[$value]  ?? $value);
-            if ($field === 'fullset_drafter_id') return (string) ($drafterMap[$value]  ?? $value);
-
-            // Fechas -> formato legible
-            if (in_array($field, $dateFields, true)) {
-                try {
-                    return Carbon::parse($value)->format('M d, Y');
-                } catch (\Throwable $e) {
-                    return (string) $value;
-                }
-            }
-
-            // Status/strings directos
-            return is_scalar($value) ? (string) $value : json_encode($value);
-        };
-
-        // Construye las líneas de cambio
-        $prettyChanges = [];
         foreach ($after as $k => $v) {
             $prev = $before[$k] ?? null;
+
+            // Mejorar booleans a texto
+            $fmt = function($val, $key) {
+                if (in_array($key, [
+                    'seller_door_ok','seller_accessories_ok','seller_exterior_finish_ok',
+                    'seller_plumbing_fixture_ok','seller_utility_direction_ok','seller_electrical_ok','other_ok'
+                ], true)) {
+                    if ($val === null) return '—';
+                    return $val ? 'Completo' : 'Pendiente';
+                }
+                if ($val === null || $val === '') return '—';
+                return (string)$val;
+            };
+
             if ($prev != $v) {
-                $label = $labels[$k] ?? Str::of($k)->replace('_', ' ')->title();
-                $old   = $pretty($k, $prev);
-                $new   = $pretty($k, $v);
-                $prettyChanges[] = "{$label}: {$old} → {$new}";
+                $name = $labelMap[$k] ?? $k;
+                $changes[] = "{$name}: {$fmt($prev,$k)} → {$fmt($v,$k)}";
             }
         }
 
-        if (!empty($prettyChanges)) {
+        if ($changes) {
             ProjectComment::create([
                 'project_id' => $this->project->id,
                 'user_id'    => auth()->id(),
                 'title'      => 'Auto update',
-                'body'       => "Updated fields:\n- " . implode("\n- ", $prettyChanges),
+                'body'       => "Updated fields:\n- " . implode("\n- ", $changes),
                 'is_system'  => true,
                 'source'     => 'auto_diff',
             ]);
         }
 
-        // 6) Refrescar UI
+        // Refrescar UI
         $this->commentsVersion++;
         $this->project->refresh()->load(['building','seller','drafterPhase1','drafterFullset']);
         $this->editing = false;
         session()->flash('success', 'Project updated.');
+        $this->dispatch('comment-added'); // si usas el scroll en comments
     }
 
-    public function startEdit(): void
-    {
-        $this->editing = true;
-    }
+    public function startEdit(): void { $this->editing = true; }
 
     public function cancelEdit(): void
     {
-        // Rehidratamos campos para descartar cambios no guardados
         $this->mount($this->project);
         $this->editing = false;
     }

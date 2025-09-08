@@ -29,6 +29,14 @@ class Project extends Model
         // General
         'general_status',
         'notes',
+         // Front Client
+        'seller_door_ok','seller_door_notes',
+        'seller_accessories_ok','seller_accessories_notes',
+        'seller_exterior_finish_ok','seller_exterior_finish_notes',
+        'seller_plumbing_fixture_ok','seller_plumbing_fixture_notes',
+        'seller_utility_direction_ok','seller_utility_direction_notes',
+        'seller_electrical_ok','seller_electrical_notes',
+        'other_ok','other_label','other_notes',
     ];
 
     protected $casts = [
@@ -36,6 +44,13 @@ class Project extends Model
         'phase1_end_date'    => 'date',
         'fullset_start_date' => 'date',
         'fullset_end_date'   => 'date',
+        'seller_door_ok'              => 'boolean',
+        'seller_accessories_ok'       => 'boolean',
+        'seller_exterior_finish_ok'   => 'boolean',
+        'seller_plumbing_fixture_ok'  => 'boolean',
+        'seller_utility_direction_ok' => 'boolean',
+        'seller_electrical_ok'        => 'boolean',
+        'other_ok'                    => 'boolean',
     ];
 
     /* =====================
