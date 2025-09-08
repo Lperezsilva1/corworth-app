@@ -27,11 +27,7 @@
     </div>
   </div>
 
-  @if (session('success'))
-    <div class="mb-4 rounded-md bg-green-500/10 text-green-700 px-4 py-2 text-sm border border-green-500/30">
-      ✅ {{ session('success') }}
-    </div>
-  @endif
+
 
   <flux:separator variant="subtle" class="my-2" />
 
@@ -272,4 +268,12 @@
     </div>
 
   </div>
+  <br> 
+   @if (session('success'))
+    <div class="mb-4 rounded-md bg-green-500/10 text-green-700 px-4 py-2 text-sm border border-green-500/30">
+      ✅ {{ session('success') }}
+    </div>
+  @endif
+ 
 </div>
+  

@@ -6,7 +6,8 @@ use Livewire\Component;
 use App\Models\ProjectComment;
 use App\Models\{Project, Building, Seller, Drafter};
 use Illuminate\Validation\Rule;
-use Livewire\Attributes\On;
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 
 class ProjectsShow extends Component
 {
@@ -111,56 +112,132 @@ class ProjectsShow extends Component
     }
 
     /** Guardar todo desde los tabs */
-  public function saveEdit(): void
-{
-    $data = $this->validate();
+    public function saveEdit(): void
+    {
+        $data = $this->validate();
 
-    // 1) Campos que quieres auditar
-    $track = [
-        'building_id','seller_id',
-        'phase1_drafter_id','phase1_status','phase1_start_date','phase1_end_date',
-        'fullset_drafter_id','fullset_status','fullset_start_date','fullset_end_date',
-        'general_status','notes',
-    ];
+        // 1) Campos que quieres auditar
+        $track = [
+            'building_id','seller_id',
+            'phase1_drafter_id','phase1_status','phase1_start_date','phase1_end_date',
+            'fullset_drafter_id','fullset_status','fullset_start_date','fullset_end_date',
+            'general_status','notes',
+        ];
 
-    // 2) Tomar snapshot ANTES
-    $before = $this->project->only($track);
+        // 2) Tomar snapshot ANTES
+        $before = $this->project->only($track);
 
-    // 3) Guardar cambios
-    $this->project->update($data);
+        // 3) Guardar cambios
+        $this->project->update($data);
 
-    // 4) Tomar snapshot DESPUÉS
-    $after = $this->project->fresh()->only($track);
+        // 4) Tomar snapshot DESPUÉS
+        $after = $this->project->fresh()->only($track);
 
-    // 5) Armar diff y registrar comentario
-    $changes = [];
-    foreach ($after as $k => $v) {
-        $prev = $before[$k] ?? null;
-        if ($prev != $v) {
-            $prevTxt = ($prev === null || $prev === '') ? '—' : (is_string($prev) ? $prev : (string) $prev);
-            $newTxt  = ($v === null || $v === '') ? '—' : (is_string($v) ? $v : (string) $v);
-            $changes[] = "$k: {$prevTxt} → {$newTxt}";
+        // 5) Armar diff legible (IDs -> nombres, fechas y labels bonitos)
+
+        // Labels para mostrar
+        $labels = [
+            'building_id'        => 'Building',
+            'seller_id'          => 'Seller',
+            'phase1_drafter_id'  => 'Phase 1 Drafter',
+            'phase1_status'      => "Phase 1 Status",
+            'phase1_start_date'  => "Phase 1 Start",
+            'phase1_end_date'    => "Phase 1 End",
+            'fullset_drafter_id' => 'Fullset Drafter',
+            'fullset_status'     => 'Fullset Status',
+            'fullset_start_date' => "Fullset Start",
+            'fullset_end_date'   => "Fullset End",
+            'general_status'     => 'General Status',
+            'notes'              => 'Notes',
+        ];
+
+        // Campos fecha
+        $dateFields = [
+            'phase1_start_date','phase1_end_date',
+            'fullset_start_date','fullset_end_date',
+        ];
+
+        // Prepara IDs únicos para resolver nombres (evita N+1)
+        $buildingIds = collect([$before['building_id'] ?? null, $after['building_id'] ?? null])
+            ->filter()->unique()->values();
+        $sellerIds   = collect([$before['seller_id'] ?? null, $after['seller_id'] ?? null])
+            ->filter()->unique()->values();
+        $drafterIds  = collect([
+            $before['phase1_drafter_id'] ?? null, $after['phase1_drafter_id'] ?? null,
+            $before['fullset_drafter_id'] ?? null, $after['fullset_drafter_id'] ?? null,
+        ])->filter()->unique()->values();
+
+        // Mapas id -> nombre
+        $buildingMap = $buildingIds->isNotEmpty()
+            ? Building::whereIn('id', $buildingIds)->pluck('name_building', 'id')
+            : collect();
+        $sellerMap   = $sellerIds->isNotEmpty()
+            ? Seller::whereIn('id', $sellerIds)->pluck('name_seller', 'id')
+            : collect();
+        $drafterMap  = $drafterIds->isNotEmpty()
+            ? Drafter::whereIn('id', $drafterIds)->pluck('name_drafter', 'id')
+            : collect();
+
+        // Formateador de valores bonitos por campo
+        $pretty = function (string $field, $value) use ($dateFields, $buildingMap, $sellerMap, $drafterMap) {
+            if ($value === null || $value === '') {
+                return '—';
+            }
+
+            // IDs -> nombres
+            if ($field === 'building_id')        return (string) ($buildingMap[$value] ?? $value);
+            if ($field === 'seller_id')          return (string) ($sellerMap[$value]   ?? $value);
+            if ($field === 'phase1_drafter_id')  return (string) ($drafterMap[$value]  ?? $value);
+            if ($field === 'fullset_drafter_id') return (string) ($drafterMap[$value]  ?? $value);
+
+            // Fechas -> formato legible
+            if (in_array($field, $dateFields, true)) {
+                try {
+                    return Carbon::parse($value)->format('M d, Y');
+                } catch (\Throwable $e) {
+                    return (string) $value;
+                }
+            }
+
+            // Status/strings directos
+            return is_scalar($value) ? (string) $value : json_encode($value);
+        };
+
+        // Construye las líneas de cambio
+        $prettyChanges = [];
+        foreach ($after as $k => $v) {
+            $prev = $before[$k] ?? null;
+            if ($prev != $v) {
+                $label = $labels[$k] ?? Str::of($k)->replace('_', ' ')->title();
+                $old   = $pretty($k, $prev);
+                $new   = $pretty($k, $v);
+                $prettyChanges[] = "{$label}: {$old} → {$new}";
+            }
         }
+
+        if (!empty($prettyChanges)) {
+            ProjectComment::create([
+                'project_id' => $this->project->id,
+                'user_id'    => auth()->id(),
+                'title'      => 'Auto update',
+                'body'       => "Updated fields:\n- " . implode("\n- ", $prettyChanges),
+                'is_system'  => true,
+                'source'     => 'auto_diff',
+            ]);
+        }
+
+        // 6) Refrescar UI
+        $this->commentsVersion++;
+        $this->project->refresh()->load(['building','seller','drafterPhase1','drafterFullset']);
+        $this->editing = false;
+        session()->flash('success', 'Project updated.');
     }
 
-   if ($changes) {
-    ProjectComment::create([
-        'project_id' => $this->project->id,
-        'user_id'    => auth()->id(),   // quién disparó la acción (útil mantenerlo)
-        'body'       => "Updated fields:\n- " . implode("\n- ", $changes),
-        'is_system'  => true,           // ✅ lo marca como automático
-        'source'     => 'auto_diff',    // opcional: nombre de la “fuente”
-    ]);
-}
+    public function startEdit(): void
+    {
+        $this->editing = true;
+    }
 
-    // 6) Refrescar UI
-    $this->commentsVersion++;
-    $this->project->refresh()->load(['building','seller','drafterPhase1','drafterFullset']);
-    $this->editing = false;
-    session()->flash('success', 'Project updated.');
-}
-
-    public function startEdit(): void { $this->editing = true; }
     public function cancelEdit(): void
     {
         // Rehidratamos campos para descartar cambios no guardados
