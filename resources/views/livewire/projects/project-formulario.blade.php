@@ -31,17 +31,6 @@
         {{-- Partial del formulario de Projects --}}
         @include('livewire.projects.partials.form')
 
-        @if (session('success'))
-          <p
-            x-data="{ show: true }"
-            x-show="show"
-            x-init="setTimeout(() => show = false, 3000)"
-            x-transition
-            class="text-green-600 text-sm font-medium mb-4"
-          >
-            {{ session('success') }}
-          </p>
-        @endif
 
       </div>
     </div>

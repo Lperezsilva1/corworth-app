@@ -118,31 +118,66 @@
 
           <div class="border-t border-base-300"></div>
 
-          {{-- General status --}}
+          {{-- General status (FK → statuses.id) --}}
           <div class="px-4 py-4">
             <div class="text-xs font-semibold text-base-content/60 mb-2">General status</div>
+
             @if($editing)
-              <select class="select select-bordered w-full md:max-w-xs" wire:model.defer="general_status">
-                <option value="">— Select status —</option>
-                @foreach($generalStatusOptions as $opt)
-                  <option value="{{ $opt }}">{{ $opt }}</option>
-                @endforeach
-              </select>
+              @php
+                // Item seleccionado (para mostrar previsualización)
+                $current = collect($statuses)->firstWhere('id', (int) ($general_status ?? $project->general_status));
+                $key     = $current['key'] ?? null;
+                $label   = $current['label'] ?? null;
+                $palette = [
+                  'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
+                  'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
+                  'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                  'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                  'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
+                ];
+                $badge   = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
+                $tone    = $palette[$key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
+              @endphp
+
+              <div class="flex items-center gap-3">
+                <select class="select select-bordered w-full md:max-w-xs" wire:model.defer="general_status">
+                  <option value="">— Select status —</option>
+                  @foreach($statuses as $st)
+                    <option value="{{ $st['id'] }}">{{ $st['label'] }}</option>
+                  @endforeach
+                </select>
+
+                {{-- Preview del badge seleccionado --}}
+                @if($label)
+                  <span class="{{ $badge }} {{ $tone }}">
+                    <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $label }}
+                  </span>
+                @endif
+              </div>
+
               @error('general_status') <p class="text-error text-xs mt-1">{{ $message }}</p> @enderror
             @else
-              @switch($project->general_status)
-                @case('Approved')
-                  <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Approved</span>
-                  @break
-                @case('Cancelled')
-                  <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Cancelled</span>
-                  @break
-                @case('Not Approved')
-                  <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Not Approved</span>
-                  @break
-                @default
-                  —
-              @endswitch
+              @php
+                $key   = $project->status?->key;
+                $label = $project->general_status_label;
+                $palette = [
+                  'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
+                  'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
+                  'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                  'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                  'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
+                ];
+                $badge = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
+                $tone  = $palette[$key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
+              @endphp
+
+              @if($project->status)
+                <span class="{{ $badge }} {{ $tone }}">
+                  <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $label }}
+                </span>
+              @else
+                —
+              @endif
             @endif
           </div>
 

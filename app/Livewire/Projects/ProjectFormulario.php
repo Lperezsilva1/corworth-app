@@ -3,13 +3,16 @@
 namespace App\Livewire\Projects;
 
 use Livewire\Component;
-use App\Models\{Project, Seller, Drafter, Building};
+use App\Models\{Project, Seller, Drafter, Building, Status};
 
 class ProjectFormulario extends Component
 {
     // Contexto
     public ?int $projectId = null;
     public bool $showBreadcrumbs = true; // true en página, false en modal
+
+    // Catálogo de estados
+    public array $statuses = []; // ← NUEVO
 
     // Campos
     public string  $project_name = '';
@@ -19,18 +22,18 @@ class ProjectFormulario extends Component
 
     // Phase 1 (un solo drafter)
     public ?int    $phase1_drafter_id = null;
-    public ?string $phase1_status = null;        // "Working on Phase 1's" | "Phase 1's Complete"
+    public ?string $phase1_status = null;
     public ?string $phase1_start_date = null;    // Y-m-d
     public ?string $phase1_end_date = null;      // Y-m-d
 
     // Full Set (opcional)
     public ?int    $fullset_drafter_id = null;
-    public ?string $fullset_status = null;       // "Working on Full Set" | "Ready w/o approval" | "Full Set Complete"
+    public ?string $fullset_status = null;
     public ?string $fullset_start_date = null;   // Y-m-d
     public ?string $fullset_end_date = null;     // Y-m-d
 
-    // General
-    public ?string $general_status = null;       // "Approved" | "Not Approved" | "Cancelled"
+    // General (FK a statuses.id)
+    public ?int $general_status = null;
     public ?string $notes = null;
 
     public function mount(?int $projectId = null, bool $showBreadcrumbs = true): void
@@ -38,7 +41,11 @@ class ProjectFormulario extends Component
         $this->projectId = $projectId;
         $this->showBreadcrumbs = $showBreadcrumbs;
 
+        // Cargar catálogo de estados una sola vez
+        $this->statuses = Status::active()->ordered()->get(['id','label','key'])->toArray();
+
         if ($this->projectId) {
+            // Editar: cargar registro existente
             $p = Project::findOrFail($this->projectId);
 
             $this->project_name       = (string) $p->project_name;
@@ -56,8 +63,12 @@ class ProjectFormulario extends Component
             $this->fullset_start_date = optional($p->fullset_start_date)?->format('Y-m-d');
             $this->fullset_end_date   = optional($p->fullset_end_date)?->format('Y-m-d');
 
-            $this->general_status     = $p->general_status;
+            $this->general_status     = $p->general_status; // ← usar el ID real del registro
             $this->notes              = $p->notes;
+        } else {
+            // Crear: default a pending (id = 1) — si prefieres por key:
+            // $this->general_status = Status::where('key','pending')->value('id') ?: 1;
+            $this->general_status = 1;
         }
     }
 
@@ -79,7 +90,8 @@ class ProjectFormulario extends Component
             'fullset_start_date' => 'nullable|date',
             'fullset_end_date'   => 'nullable|date|after_or_equal:fullset_start_date',
 
-            'general_status'     => 'nullable|string|max:32',
+            // Requiere ID válido del catálogo
+            'general_status'     => ['required','integer','exists:statuses,id'],
             'notes'              => 'nullable|string',
         ];
     }
@@ -87,6 +99,9 @@ class ProjectFormulario extends Component
     public function save(): void
     {
         $this->validate();
+
+        // Si es creación y no llega valor, usa 1 (pending)
+        $generalStatus = $this->projectId ? $this->general_status : (int) ($this->general_status ?: 1);
 
         $payload = [
             'project_name'       => $this->project_name,
@@ -104,7 +119,7 @@ class ProjectFormulario extends Component
             'fullset_start_date' => $this->fullset_start_date ?: null,
             'fullset_end_date'   => $this->fullset_end_date ?: null,
 
-            'general_status'     => $this->general_status,
+            'general_status'     => (int) $generalStatus,
             'notes'              => $this->notes,
         ];
 
@@ -113,25 +128,24 @@ class ProjectFormulario extends Component
             session()->flash('success', 'Project updated successfully.');
         } else {
             $project = Project::create($payload);
-            $this->projectId = $project->id; // por si necesitas el id luego
+            $this->projectId = $project->id;
             session()->flash('success', 'Project created successfully.');
-
-            // Si quieres limpiar campos para un nuevo registro en página (no en modal):
-            // $this->reset(['project_name','building_id','seller_id','phase1_drafter_id','phase1_status','phase1_start_date','phase1_end_date','fullset_drafter_id','fullset_status','fullset_start_date','fullset_end_date','general_status','notes']);
+            $this->dispatch('notify', 'Project created successfully ');
+            $this->reset(['project_name','building_id','seller_id','phase1_drafter_id','phase1_status','phase1_start_date','phase1_end_date','fullset_drafter_id','fullset_status','fullset_start_date','fullset_end_date','general_status','notes']);
         }
 
-        // Notificar: cerrar modal y refrescar PowerGrid
-        $this->dispatch('project-saved'); // el contenedor cierra el modal
+        // Notificar UI
+        $this->dispatch('project-saved');
         $this->dispatch('pg:eventRefresh-projects-table-main');
     }
 
     public function render()
     {
-        // Vista: resources/views/livewire/projects/project-formulario.blade.php
         return view('livewire.projects.project-formulario', [
             'buildings' => Building::orderBy('name_building')->get(['id','name_building']),
             'sellers'   => Seller::orderBy('name_seller')->get(['id','name_seller','email']),
             'drafters'  => Drafter::orderBy('name_drafter')->get(['id','name_drafter']),
+            'statuses'  => $this->statuses, // ← pasar a la vista
         ]);
     }
 }

@@ -3,7 +3,7 @@
 namespace App\Livewire\Projects;
 
 use Livewire\Component;
-use App\Models\{Project, Building, Seller, Drafter, ProjectComment};
+use App\Models\{Project, Building, Seller, Drafter, ProjectComment, Status};
 use Illuminate\Validation\Rule;
 
 class ProjectsShow extends Component
@@ -18,6 +18,7 @@ class ProjectsShow extends Component
     public $buildings = [];
     public $sellers   = [];
     public $drafters  = [];
+    public $statuses  = []; // ← NUEVO: catálogo de estados (id, label, key)
 
     /** Campos editables existentes */
     public $building_id = null;
@@ -33,13 +34,12 @@ class ProjectsShow extends Component
     public ?string $fullset_start_date = null;  // Y-m-d
     public ?string $fullset_end_date   = null;
 
-    public ?string $general_status = null;
+    public ?int $general_status = null; // ← CAMBIO: ahora es FK (int)
     public ?string $notes = null;
 
-    /** Opciones de estado (ejemplo) */
+    /** Opciones de estado por fase (se quedan como estaban) */
     public array $phase1StatusOptions  = ['Not started','In progress','Blocked',"Phase 1's Complete"];
     public array $fullsetStatusOptions = ['Not started','In progress','Blocked','Full Set Complete'];
-    public array $generalStatusOptions = ['Not Approved','Approved','Cancelled'];
 
     /** ← NUEVO: 7 ítems (6 fijos + Otro) */
     // OK flags
@@ -68,11 +68,13 @@ class ProjectsShow extends Component
 
     public function mount(Project $project): void
     {
-        $this->project = $project->load(['building','seller','drafterPhase1','drafterFullset']);
+        // Cargamos también 'status' para tener el label actual
+        $this->project = $project->load(['building','seller','drafterPhase1','drafterFullset','status']);
 
         $this->buildings = Building::orderBy('name_building')->get(['id','name_building']);
         $this->sellers   = Seller::orderBy('name_seller')->get(['id','name_seller']);
         $this->drafters  = Drafter::orderBy('name_drafter')->get(['id','name_drafter']);
+        $this->statuses  = Status::active()->ordered()->get(['id','label','key'])->toArray(); // ← catálogo
 
         // Hidratar campos
         $p = $this->project;
@@ -89,7 +91,7 @@ class ProjectsShow extends Component
         $this->fullset_start_date  = optional($p->fullset_start_date)?->format('Y-m-d');
         $this->fullset_end_date    = optional($p->fullset_end_date)?->format('Y-m-d');
 
-        $this->general_status      = $p->general_status;
+        $this->general_status      = $p->general_status; // ← ID del status
         $this->notes               = $p->notes;
 
         // ← NUEVO: 7 ítems
@@ -129,7 +131,8 @@ class ProjectsShow extends Component
             'fullset_start_date' => ['nullable','date'],
             'fullset_end_date'   => ['nullable','date','after_or_equal:fullset_start_date'],
 
-            'general_status'     => ['nullable','string', Rule::in($this->generalStatusOptions)],
+            // ← CAMBIO: valida FK a statuses.id
+            'general_status'     => ['nullable','integer','exists:statuses,id'],
             'notes'              => ['nullable','string'],
 
             // ← NUEVO: 7 ítems
@@ -141,7 +144,7 @@ class ProjectsShow extends Component
             'seller_electrical_ok'        => ['nullable','boolean'],
             'other_ok'                    => ['nullable','boolean'],
 
-            // Notas (si está PENDIENTE → obligatoria)
+            // Notas condicionales
             'seller_door_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_door_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Puerta.'); }],
             'seller_accessories_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_accessories_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Accesorios.'); }],
             'seller_exterior_finish_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_exterior_finish_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Exterior Finish.'); }],
@@ -208,6 +211,9 @@ class ProjectsShow extends Component
 
         $after = $this->project->fresh()->only($track);
 
+        // Mapa de labels para general_status (evita mostrar IDs)
+        $statusLabelById = Status::pluck('label','id')->all();
+
         // Diff legible
         $changes = [];
         $labelMap = [
@@ -226,19 +232,24 @@ class ProjectsShow extends Component
             'other_ok' => 'Otro',
             'other_label' => 'Otro (título)',
             'other_notes' => 'Otro (nota)',
+            'general_status' => 'General Status',
         ];
 
         foreach ($after as $k => $v) {
             $prev = $before[$k] ?? null;
 
-            // Mejorar booleans a texto
-            $fmt = function($val, $key) {
+            $fmt = function($val, $key) use ($statusLabelById) {
+                // Booleans
                 if (in_array($key, [
                     'seller_door_ok','seller_accessories_ok','seller_exterior_finish_ok',
                     'seller_plumbing_fixture_ok','seller_utility_direction_ok','seller_electrical_ok','other_ok'
                 ], true)) {
                     if ($val === null) return '—';
                     return $val ? 'Completo' : 'Pendiente';
+                }
+                // General status (FK → label)
+                if ($key === 'general_status') {
+                    return $val ? ($statusLabelById[$val] ?? '—') : '—';
                 }
                 if ($val === null || $val === '') return '—';
                 return (string)$val;
@@ -263,7 +274,7 @@ class ProjectsShow extends Component
 
         // Refrescar UI
         $this->commentsVersion++;
-        $this->project->refresh()->load(['building','seller','drafterPhase1','drafterFullset']);
+        $this->project->refresh()->load(['building','seller','drafterPhase1','drafterFullset','status']);
         $this->editing = false;
         session()->flash('success', 'Project updated.');
         $this->dispatch('comment-added'); // si usas el scroll en comments
