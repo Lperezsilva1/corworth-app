@@ -31,7 +31,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'           # tu versión original
+          php-version: '8.4'
           tools: composer:v2
           extensions: mbstring, pdo_mysql, bcmath, intl
           coverage: none
@@ -39,38 +39,23 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'           # tu versión original
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Node Dependencies
         run: npm i
 
+      # (Opcional) Tus credenciales privadas de composer, deja si las usas
       - name: Add Flux Credentials Loaded From ENV
         run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
 
       - name: Install PHP Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Prepare .env and .env.testing for MySQL
+      - name: Prepare .env and .env.testing (opcional)
         run: |
-          cp .env.example .env
-          cp .env.example .env.testing
-          php -r "
-            \$e=file_get_contents('.env.testing');
-            // modo testing + drivers rápidos
-            if (strpos(\$e,'APP_ENV=')===false){\$e.=\"\nAPP_ENV=testing\n\";} else { \$e=preg_replace('/^APP_ENV=.*/m','APP_ENV=testing',\$e); }
-            \$e=preg_replace('/^CACHE_STORE=.*/m','CACHE_STORE=array',\$e);
-            \$e=preg_replace('/^CACHE_DRIVER=.*/m','CACHE_DRIVER=array',\$e);
-            \$e=preg_replace('/^SESSION_DRIVER=.*/m','SESSION_DRIVER=array',\$e);
-            // forzar MySQL del servicio
-            \$e=preg_replace('/^DB_CONNECTION=.*/m','DB_CONNECTION=mysql',\$e);
-            \$e=preg_replace('/^DB_HOST=.*/m','DB_HOST=127.0.0.1',\$e);
-            \$e=preg_replace('/^DB_PORT=.*/m','DB_PORT=3306',\$e);
-            \$e=preg_replace('/^DB_DATABASE=.*/m','DB_DATABASE=laravel',\$e);
-            \$e=preg_replace('/^DB_USERNAME=.*/m','DB_USERNAME=laravel',\$e);
-            if (strpos(\$e,'DB_PASSWORD=')===false){\$e.=\"\nDB_PASSWORD=secret\n\";} else { \$e=preg_replace('/^DB_PASSWORD=.*/m','DB_PASSWORD=secret',\$e); }
-            file_put_contents('.env.testing',\$e);
-          "
+          cp .env.example .env || true
+          cp .env.example .env.testing || true
 
       - name: Generate APP_KEY (testing)
         run: php artisan key:generate --env=testing
@@ -85,18 +70,15 @@ jobs:
             sleep 2
           done
 
-      - name: Build Assets
-        run: npm run build
-
-      - name: Dump DB env seen by Laravel
-        run: php -r "echo 'DB_CONNECTION=' . env('DB_CONNECTION') . PHP_EOL; echo 'DB_HOST=' . env('DB_HOST') . PHP_EOL; echo 'DB_DATABASE=' . env('DB_DATABASE') . PHP_EOL; echo 'DB_USERNAME=' . env('DB_USERNAME') . PHP_EOL;"
-
       - name: Clear config cache
         run: php artisan config:clear
 
+      - name: Build Assets
+        run: npm run build
+
       - name: Run Migrations (testing)
         run: php artisan migrate --env=testing --force
-        # Si necesitas datos base:
+        # Si tus tests dependen de datos base, usa --seed:
         # run: php artisan migrate --env=testing --force --seed
 
       - name: Run Tests
