@@ -10,6 +10,18 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     environment: Testing
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: laravel
+      DB_USERNAME: laravel
+      DB_PASSWORD: secret
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
 
     services:
       mysql:
@@ -45,7 +57,6 @@ jobs:
       - name: Install Node Dependencies
         run: npm i
 
-      # (Opcional) Tus credenciales privadas de composer, deja si las usas
       - name: Add Flux Credentials Loaded From ENV
         run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
 
@@ -78,7 +89,7 @@ jobs:
 
       - name: Run Migrations (testing)
         run: php artisan migrate --env=testing --force
-        # Si tus tests dependen de datos base, usa --seed:
+        # Si tus tests dependen de datos base:
         # run: php artisan migrate --env=testing --force --seed
 
       - name: Run Tests

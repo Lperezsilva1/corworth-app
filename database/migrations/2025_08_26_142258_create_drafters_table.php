@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('drafters', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); 
+            $table->string('name_drafter'); 
             $table->text('description_drafter')->nullable(); // descripción
             $table->boolean('status')->default(true); // activo/inactivo  
             $table->timestamps();
