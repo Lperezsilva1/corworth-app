@@ -88,6 +88,12 @@ jobs:
       - name: Build Assets
         run: npm run build
 
+      - name: Dump DB env seen by Laravel
+        run: php -r "echo 'DB_CONNECTION=' . env('DB_CONNECTION') . PHP_EOL; echo 'DB_HOST=' . env('DB_HOST') . PHP_EOL; echo 'DB_DATABASE=' . env('DB_DATABASE') . PHP_EOL; echo 'DB_USERNAME=' . env('DB_USERNAME') . PHP_EOL;"
+
+      - name: Clear config cache
+        run: php artisan config:clear
+
       - name: Run Migrations (testing)
         run: php artisan migrate --env=testing --force
         # Si necesitas datos base:
