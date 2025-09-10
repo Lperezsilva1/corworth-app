@@ -57,21 +57,13 @@ jobs:
       - name: Install Node Dependencies
         run: npm i
 
-      - name: Add Flux Credentials Loaded From ENV
-        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
-
       - name: Install PHP Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
-      - name: Prepare .env and .env.testing (opcional)
-        run: |
-          cp .env.example .env || true
-          cp .env.example .env.testing || true
 
       - name: Generate APP_KEY (testing)
         run: php artisan key:generate --env=testing
 
-      - name: Install MySQL client (for health checks)
+      - name: Install MySQL client
         run: sudo apt-get update && sudo apt-get install -y mysql-client
 
       - name: Wait for MySQL
@@ -84,13 +76,8 @@ jobs:
       - name: Clear config cache
         run: php artisan config:clear
 
-      - name: Build Assets
-        run: npm run build
-
-      - name: Run Migrations (testing)
+      - name: Run Migrations
         run: php artisan migrate --env=testing --force
-        # Si tus tests dependen de datos base:
-        # run: php artisan migrate --env=testing --force --seed
 
       - name: Run Tests
-        run: ./vendor/bin/pest -p
+        run: ./vendor/bin/pest
