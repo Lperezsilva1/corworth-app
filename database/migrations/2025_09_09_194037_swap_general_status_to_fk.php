@@ -8,70 +8,112 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration {
     public function up(): void
     {
-        // 1) Columna temporal INT
-        Schema::table('projects', function (Blueprint $table) {
-            $table->unsignedBigInteger('general_status_new')->nullable()->after('general_status');
+        $driver = DB::getDriverName(); // 'mysql' | 'sqlite' | etc.
+
+        // 1) Columna temporal
+        Schema::table('projects', function (Blueprint $table) use ($driver) {
+            // en SQLite evito AFTER y cambios complejos
+            $table->unsignedBigInteger('general_status_new')->nullable();
         });
 
-        // 2) Backfill (ajusta el mapeo de ser necesario)
-        //    Asumimos valores viejos: 'approved', 'not_approved', 'cancelled'
-        //    not_approved -> awaiting_approval (tu nuevo flujo)
+        // 2) Backfill sin JOIN: con subconsultas (válido en MySQL y SQLite)
         DB::statement("
-            UPDATE projects p
-            LEFT JOIN statuses s_pending   ON s_pending.`key`   = 'pending'
-            LEFT JOIN statuses s_working   ON s_working.`key`   = 'working'
-            LEFT JOIN statuses s_await     ON s_await.`key`     = 'awaiting_approval'
-            LEFT JOIN statuses s_approved  ON s_approved.`key`  = 'approved'
-            LEFT JOIN statuses s_cancelled ON s_cancelled.`key` = 'cancelled'
-            SET p.general_status_new = CASE
-                WHEN p.general_status = 'approved'     THEN s_approved.id
-                WHEN p.general_status = 'not_approved' THEN s_await.id
-                WHEN p.general_status = 'cancelled'    THEN s_cancelled.id
-                WHEN p.general_status IS NULL OR p.general_status = '' THEN s_pending.id
-                ELSE s_pending.id
+            UPDATE projects
+            SET general_status_new = CASE
+                WHEN general_status = 'approved' THEN (
+                    SELECT id FROM statuses WHERE `key` = 'approved' LIMIT 1
+                )
+                WHEN general_status = 'not_approved' THEN (
+                    SELECT id FROM statuses WHERE `key` = 'awaiting_approval' LIMIT 1
+                )
+                WHEN general_status = 'cancelled' THEN (
+                    SELECT id FROM statuses WHERE `key` = 'cancelled' LIMIT 1
+                )
+                WHEN general_status IS NULL OR general_status = '' THEN (
+                    SELECT id FROM statuses WHERE `key` = 'pending' LIMIT 1
+                )
+                ELSE (
+                    SELECT id FROM statuses WHERE `key` = 'pending' LIMIT 1
+                )
             END
         ");
 
-        // 3) NOT NULL + FK
+        // 3) Restricciones (solo en MySQL: SQLite lo dejo laxo para tests)
+        if ($driver === 'mysql') {
+            // NOT NULL
+            Schema::table('projects', function (Blueprint $table) {
+                // requiere doctrine/dbal si tu versión no soporta change nativo
+                $table->unsignedBigInteger('general_status_new')->nullable(false)->change();
+            });
+
+            // FK
+            Schema::table('projects', function (Blueprint $table) {
+                $table->foreign('general_status_new')
+                    ->references('id')->on('statuses')
+                    ->cascadeOnUpdate()
+                    ->restrictOnDelete();
+            });
+        }
+
+        // 4) Eliminar string viejo y renombrar
+        //    En SQLite, Laravel reconstruye la tabla; si tu entorno local se queja,
+        //    instala: composer require doctrine/dbal --dev
         Schema::table('projects', function (Blueprint $table) {
-            $table->unsignedBigInteger('general_status_new')->nullable(false)->change();
-            $table->foreign('general_status_new')
-                  ->references('id')->on('statuses')
-                  ->cascadeOnUpdate()
-                  ->restrictOnDelete();
+            // Borro la vieja (string)
+            if (Schema::hasColumn('projects', 'general_status')) {
+                $table->dropColumn('general_status');
+            }
         });
 
-        // 4) Eliminar string viejo y renombrar la nueva columna
         Schema::table('projects', function (Blueprint $table) {
-            $table->dropColumn('general_status');
-        });
-        // Si al renombrar te pide doctrine/dbal, instala:
-        // composer require doctrine/dbal
-        Schema::table('projects', function (Blueprint $table) {
+            // Renombro la temporal a definitiva
             $table->renameColumn('general_status_new', 'general_status');
         });
     }
 
     public function down(): void
     {
-        // Rollback: volver a string
+        $driver = DB::getDriverName();
+
+        // Si bajamos, volvemos a string
+        // 1) Renombrar columna actual a *_id para poder crear el string
         Schema::table('projects', function (Blueprint $table) {
-            $table->renameColumn('general_status', 'general_status_id');
+            if (Schema::hasColumn('projects', 'general_status')) {
+                $table->renameColumn('general_status', 'general_status_id');
+            }
         });
 
+        // 2) Crear string
         Schema::table('projects', function (Blueprint $table) {
             $table->string('general_status')->nullable()->after('general_status_id');
         });
 
+        // 3) Backfill inverso usando subconsulta
         DB::statement("
-            UPDATE projects p
-            LEFT JOIN statuses s ON s.id = p.general_status_id
-            SET p.general_status = s.`key`
+            UPDATE projects
+            SET general_status = (
+                SELECT `key` FROM statuses WHERE statuses.id = projects.general_status_id
+                LIMIT 1
+            )
         ");
 
+        // 4) Quitar FK solo si existía (MySQL)
+        if ($driver === 'mysql' && Schema::hasColumn('projects', 'general_status_id')) {
+            // El nombre de la FK podría variar; uso arreglo para drop por columna
+            Schema::table('projects', function (Blueprint $table) {
+                try {
+                    $table->dropForeign(['general_status_id']);
+                } catch (\Throwable $e) {
+                    // si no existía, ignorar
+                }
+            });
+        }
+
+        // 5) Eliminar la *_id
         Schema::table('projects', function (Blueprint $table) {
-            $table->dropForeign(['general_status_id']);
-            $table->dropColumn('general_status_id');
+            if (Schema::hasColumn('projects', 'general_status_id')) {
+                $table->dropColumn('general_status_id');
+            }
         });
     }
 };
