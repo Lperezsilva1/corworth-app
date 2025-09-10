@@ -12,6 +12,7 @@ jobs:
     environment: Testing
     env:
       APP_ENV: testing
+      APP_KEY: base64:sc/O5RUFMRYbpfu5W5TEDZNuby47d25rKU31WLwMMMQ=
       DB_CONNECTION: mysql
       DB_HOST: 127.0.0.1
       DB_PORT: 3306
@@ -59,9 +60,6 @@ jobs:
 
       - name: Install PHP Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
-      - name: Generate APP_KEY (testing)
-        run: php artisan key:generate --env=testing
 
       - name: Install MySQL client
         run: sudo apt-get update && sudo apt-get install -y mysql-client
