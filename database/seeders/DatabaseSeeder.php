@@ -21,6 +21,10 @@ class DatabaseSeeder extends Seeder
         ]);
 
           $this->call([
-        StatusSeeder::class, ]); 
+        StatusSeeder::class,
+          ProjectsDemoSeeder::class, // ← crea Buildings/Sellers/Drafters/Projects    
+    ]); 
+
+        
     }
 }

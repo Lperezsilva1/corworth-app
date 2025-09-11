@@ -288,4 +288,10 @@ wireframe --default, dark --prefersdark, cupcake;
   .timeline.timeline-vertical.timeline-left li hr{
     grid-column: 2 !important;
   }
-  
+  .pg-checkbox,
+.pg-checkbox > * {
+  width: 28px !important;
+  min-width: 28px !important;
+  padding-left: .25rem !important;
+  padding-right: .25rem !important;
+}

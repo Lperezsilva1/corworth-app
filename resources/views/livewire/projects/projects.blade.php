@@ -93,9 +93,10 @@
       </div>
     </div>
     {{-- ===== /STATS DINÁMICOS ===== --}}
-
+    <flux:separator variant="subtle" />
     {{-- Tabla (PowerGrid/Livewire) --}}
     <livewire:projects.projects-table />
+
 
     {{-- Modal DaisyUI (Create/Edit) --}}
     @if($this->modalOpen)

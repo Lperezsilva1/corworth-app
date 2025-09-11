@@ -13,9 +13,10 @@ return [
     | Configure here the theme of your choice.
     */
 
-    //   'theme' => \PowerComponents\LivewirePowerGrid\Themes\Tailwind::class,
+    //'theme' => \PowerComponents\LivewirePowerGrid\Themes\Tailwind::class,
     'theme' => \PowerComponents\LivewirePowerGrid\Themes\DaisyUI::class,
-    // 'theme' => \PowerComponents\LivewirePowerGrid\Themes\Bootstrap5::class,
+ //'theme' => \PowerComponents\LivewirePowerGrid\Themes\Bootstrap5::class,
+    //'theme' => \App\PowerGrid\FluxTheme::class, // <— tu clase de tema
 
     'cache_ttl' => null,
 
