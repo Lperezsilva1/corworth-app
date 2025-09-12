@@ -418,7 +418,7 @@
         <div>
           <div class="text-sm text-base-content/70 mb-1">Duration</div>
           <div class="font-medium">
-            {{ $project->phase1_duration_computed ? $project->phase1_duration_computed.' days' : '—' }}
+           {{ $project->phase1_duration ? $project->phase1_duration.' days' : '—' }}
           </div>
         </div>
 
@@ -509,7 +509,7 @@
         <div>
           <div class="text-sm text-base-content/70 mb-1">Duration</div>
           <div class="font-medium">
-            {{ $project->fullset_duration_computed ? $project->fullset_duration_computed.' days' : '—' }}
+            {{ $project->fullset_duration ? $project->fullset_duration.' days' : '—' }}
           </div>
         </div>
 

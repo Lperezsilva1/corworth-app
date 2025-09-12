@@ -13,8 +13,9 @@ use App\Livewire\Buildings\BuildingFormulario;
 use App\Livewire\Projects\Projects;           // índice + modal
 use App\Livewire\Projects\ProjectFormulario;  // página de creación
 use App\Livewire\Projects\ProjectsShow;       // detalle
-
+use App\Livewire\Dashboard\Main as DashboardMain;
 use App\Models\ProjectCommentAttachment;       // 👈 modelo de adjuntos
+use App\Livewire\Activity\Index as ActivityIndex;
 
 Route::get('/', function () {
     return view('welcome');
@@ -39,9 +40,13 @@ Route::get('/projects/{project}', ProjectsShow::class)->name('projects.show');
 Route::get('/projects/{project}/edit', ProjectFormulario::class)->name('projects.edit');
 
 // ===== DASHBOARD =====
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', DashboardMain::class)->name('dashboard');
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/activity', ActivityIndex::class)->name('activity.index');
+});
 
 // ===== ÁREA AUTENTICADA =====
 Route::middleware(['auth'])->group(function () {

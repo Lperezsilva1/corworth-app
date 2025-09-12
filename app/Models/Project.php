@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use Carbon\Carbon;
 use App\Models\Status;
 
 class Project extends Model
@@ -121,19 +122,27 @@ class Project extends Model
     /* =====================
        Helpers de duración
        ===================== */
-    public function getPhase1DurationComputedAttribute(): ?int
-    {
-        return ($this->phase1_start_date && $this->phase1_end_date)
-            ? $this->phase1_end_date->diffInDays($this->phase1_start_date) + 1
-            : null;
-    }
+public function getPhase1DurationAttribute(): ?int
+{
+    $start = $this->phase1_start_date;
+    $end   = $this->phase1_end_date ?? now();
 
-    public function getFullsetDurationComputedAttribute(): ?int
-    {
-        return ($this->fullset_start_date && $this->fullset_end_date)
-            ? $this->fullset_end_date->diffInDays($this->fullset_start_date) + 1
-            : null;
-    }
+    if (! $start) return null;
+    if ($end->lt($start)) [$start, $end] = [$end, $start];
+
+    return $start->diffInDays($end) + 1;
+}
+
+public function getFullsetDurationAttribute(): ?int
+{
+    $start = $this->fullset_start_date;
+    $end   = $this->fullset_end_date ?? now();
+
+    if (! $start) return null;
+    if ($end->lt($start)) [$start, $end] = [$end, $start];
+
+    return $start->diffInDays($end) + 1;
+}
 
     /* =====================
        Scopes para grids (por estado general)

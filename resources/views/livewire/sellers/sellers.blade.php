@@ -4,7 +4,7 @@
       
       {{-- Breadcrumbs --}}
       <x-breadcrumbs :items="[
-        ['label' => 'Home', 'url' => url('/')],
+        ['label' => 'Home', 'url' => url('/dashboard')],
         ['label' => 'Sellers']
       ]" />
 

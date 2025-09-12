@@ -3,7 +3,7 @@
     <div class="relative mb-6 w-full">
       {{-- Breadcrumbs --}}
       <x-breadcrumbs :items="[
-        ['label' => 'Home', 'url' => url('/')],
+        ['label' => 'Home', 'url' => url('/dashboard')],
         ['label' => 'Projects']
       ]" />
 
