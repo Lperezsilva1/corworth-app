@@ -98,6 +98,10 @@ class ProjectFormulario extends Component
 
     public function save(): void
     {
+
+
+
+        
         $this->validate();
 
         // Si es creación y no llega valor, usa 1 (pending)
@@ -127,6 +131,7 @@ class ProjectFormulario extends Component
             Project::findOrFail($this->projectId)->update($payload);
             session()->flash('success', 'Project updated successfully.');
         } else {
+             
             $project = Project::create($payload);
             $this->projectId = $project->id;
             session()->flash('success', 'Project created successfully.');

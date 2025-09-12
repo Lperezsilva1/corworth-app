@@ -5,13 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;              // 👈 IMPORTANTE
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
-use App\Models\Status;                                     // 👈 IMPORTANTE
+use App\Models\Status;
 
 class Project extends Model
 {
-    use HasFactory, SoftDeletes; // 👈 activar
+    use HasFactory, SoftDeletes;
 
     protected $table = 'projects';
 
@@ -22,16 +22,16 @@ class Project extends Model
         'seller_id',
         // Phase 1
         'phase1_drafter_id',
-        'phase1_status',
+        'phase1_status_id',      // FK a statuses.id
         'phase1_start_date',
         'phase1_end_date',
         // Full Set
         'fullset_drafter_id',
-        'fullset_status',
+        'fullset_status_id',     // FK a statuses.id
         'fullset_start_date',
         'fullset_end_date',
         // General
-        'general_status', // ahora FK a statuses.id
+        'general_status',        // FK a statuses.id (manteniendo tu nombre de columna)
         'notes',
         // Front Client
         'seller_door_ok','seller_door_notes',
@@ -56,16 +56,19 @@ class Project extends Model
         'seller_electrical_ok'        => 'boolean',
         'other_ok'                    => 'boolean',
         'general_status'              => 'integer', // FK entero
+        'phase1_status_id'            => 'integer', // FK entero
+        'fullset_status_id'           => 'integer', // FK entero
         'deleted_at'                  => 'datetime',
     ];
 
-    /** Default a pending (1) si no viene nada al crear (opcional, pero recomendable) */
+    /** Defaults seguros por key (no dependas de id=1) */
     protected static function booted(): void
     {
         static::creating(function (Project $p) {
-            if (is_null($p->general_status)) {
-                $p->general_status = 1; // pending
-            }
+            $pendingId = Status::where('key','pending')->value('id');
+            if (is_null($p->general_status))     $p->general_status     = $pendingId;
+            if (is_null($p->phase1_status_id))   $p->phase1_status_id   = $pendingId;
+            if (is_null($p->fullset_status_id))  $p->fullset_status_id  = $pendingId;
         });
     }
 
@@ -104,6 +107,17 @@ class Project extends Model
         return $this->belongsTo(Status::class, 'general_status');
     }
 
+    /** Estados por fase (FKs) */
+    public function phase1Status(): BelongsTo
+    {
+        return $this->belongsTo(Status::class, 'phase1_status_id');
+    }
+
+    public function fullsetStatus(): BelongsTo
+    {
+        return $this->belongsTo(Status::class, 'fullset_status_id');
+    }
+
     /* =====================
        Helpers de duración
        ===================== */
@@ -122,7 +136,7 @@ class Project extends Model
     }
 
     /* =====================
-       Scopes para grids
+       Scopes para grids (por estado general)
        ===================== */
     public function scopeSearch(Builder $q, ?string $term): Builder
     {
@@ -155,7 +169,7 @@ class Project extends Model
     }
 
     /* =====================
-       Scopes por estado (por key del catálogo)
+       Scopes por estado general (por key del catálogo)
        ===================== */
     public function scopeWithStatusKey(Builder $q, string $key): Builder
     {
@@ -188,5 +202,73 @@ class Project extends Model
     public function getGeneralStatusBadgeAttribute(): string
     {
         return $this->status?->ui_class ?? 'badge badge-ghost';
+    }
+
+    /* =====================
+       Helpers Status (key <-> id)
+       ===================== */
+    public static function statusIdByKey(string $key): ?int
+    {
+        static $cache = [];
+        return $cache[$key] ??= Status::where('key', $key)->value('id');
+    }
+
+    public static function statusKeyById(?int $id): ?string
+    {
+        static $cache = [];
+        if (!$id) return null;
+        return $cache[$id] ??= optional(Status::find($id))->key;
+    }
+
+    /* =====================
+       Reglas de negocio
+       ===================== */
+
+    /**
+     * Recalcula el estado general:
+     * - Si Phase1 y FullSet están 'complete' => 'awaiting_approval'
+     * - Si no, pero hay drafter asignado en alguna fase => 'working'
+     * - Si no hay drafters => 'pending'
+     * Notas:
+     * - Si ya está 'approved', no se baja automáticamente.
+     */
+   public function recalcGeneralStatus(bool $save = true): void
+{
+    // No bajar estados finales
+    $currentGeneral = self::statusKeyById($this->general_status);
+    if (in_array($currentGeneral, ['approved','cancelled'], true)) {
+        return;
+    }
+
+    $p1 = self::statusKeyById($this->phase1_status_id);
+    $fs = self::statusKeyById($this->fullset_status_id);
+    $hasAssignments = (bool) ($this->phase1_drafter_id || $this->fullset_drafter_id);
+
+    $newKey =
+        // ambas fases completas => awaiting_approval
+        ($p1 === 'complete' && $fs === 'complete') ? 'awaiting_approval'
+        // si alguna fase está en working O hay drafters asignados => working
+        : (($p1 === 'working' || $fs === 'working' || $hasAssignments) ? 'working'
+        // si no, pending
+        : 'pending');
+
+    $newId = self::statusIdByKey($newKey);
+    if ($newId && $this->general_status !== $newId) {
+        $this->general_status = $newId;
+        if ($save) $this->saveQuietly();
+    }
+}
+
+    /** Aprueba si ambas fases están 'complete' */
+    public function approve(): bool
+    {
+        $phase1Key  = self::statusKeyById($this->phase1_status_id);
+        $fullsetKey = self::statusKeyById($this->fullset_status_id);
+
+        if ($phase1Key === 'complete' && $fullsetKey === 'complete') {
+            $this->general_status = self::statusIdByKey('approved');
+            return $this->save();
+        }
+        return false;
     }
 }

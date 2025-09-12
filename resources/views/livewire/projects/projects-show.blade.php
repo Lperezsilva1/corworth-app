@@ -124,10 +124,10 @@
 
             @if($editing)
               @php
-                // Item seleccionado (para mostrar previsualización)
                 $current = collect($statuses)->firstWhere('id', (int) ($general_status ?? $project->general_status));
                 $key     = $current['key'] ?? null;
                 $label   = $current['label'] ?? null;
+
                 $palette = [
                   'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
                   'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
@@ -137,17 +137,12 @@
                 ];
                 $badge   = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
                 $tone    = $palette[$key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
+                $generalKeys    = ['pending','working','awaiting_approval','approved','cancelled'];
+                $generalOptions = collect($statuses)->whereIn('key', $generalKeys);
               @endphp
 
               <div class="flex items-center gap-3">
-                <select class="select select-bordered w-full md:max-w-xs" wire:model.defer="general_status">
-                  <option value="">— Select status —</option>
-                  @foreach($statuses as $st)
-                    <option value="{{ $st['id'] }}">{{ $st['label'] }}</option>
-                  @endforeach
-                </select>
-
-                {{-- Preview del badge seleccionado --}}
+                {{-- aquí no hay select: auto-managed --}}
                 @if($label)
                   <span class="{{ $badge }} {{ $tone }}">
                     <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $label }}
@@ -172,9 +167,22 @@
               @endphp
 
               @if($project->status)
-                <span class="{{ $badge }} {{ $tone }}">
-                  <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $label }}
-                </span>
+                <div class="flex items-center gap-3">
+                  <span class="{{ $badge }} {{ $tone }}">
+                    <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $label }}
+                  </span>
+
+                  {{-- ✅ Botón APPROVE solo cuando ambas fases están complete y aún no está final --}}
+                  @if(($project->phase1Status?->key === 'complete')
+                      && ($project->fullsetStatus?->key === 'complete')
+                      && !in_array($project->status?->key, ['approved','cancelled']))
+                    <button class="btn btn-success btn-sm"
+                            wire:click="approveProject"
+                            wire:loading.attr="disabled">
+                      Approve
+                    </button>
+                  @endif
+                </div>
               @else
                 —
               @endif
@@ -369,21 +377,40 @@
         <div>
           <div class="text-sm text-base-content/70 mb-1">Status</div>
           @if($editing)
-            <select class="select select-bordered w-full" wire:model.defer="phase1_status">
+            @php
+              $phaseKeys = ['pending','working','complete'];
+              $phaseOptions = collect($statuses)->whereIn('key', $phaseKeys);
+            @endphp
+
+            <select class="select select-bordered w-full" wire:model.defer="phase1_status_id">
               <option value="">— Select status —</option>
-              @foreach($phase1StatusOptions as $opt)
-                <option value="{{ $opt }}">{{ $opt }}</option>
+              @foreach($phaseOptions as $st)
+                <option value="{{ $st['id'] }}">{{ $st['label'] }}</option>
               @endforeach
             </select>
-            @error('phase1_status') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
+            @error('phase1_status_id') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
           @else
-            @php $p1 = $project->phase1_status; @endphp
-            @if(!$p1)
-              <div>—</div>
-            @elseif($p1 === "Phase 1's Complete")
-              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">{{ $p1 }}</span>
+            @php
+              $p1Key   = $project->phase1Status?->key;
+              $p1Label = $project->phase1Status?->label;
+              $palette = [
+                'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
+                'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
+                'complete'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
+              ];
+              $badge = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
+              $tone  = $palette[$p1Key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
+            @endphp
+
+            @if($p1Label)
+              <span class="{{ $badge }} {{ $tone }}">
+                <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $p1Label }}
+              </span>
             @else
-              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">{{ $p1 }}</span>
+              <div>—</div>
             @endif
           @endif
         </div>
@@ -441,21 +468,40 @@
         <div>
           <div class="text-sm text-base-content/70 mb-1">Status</div>
           @if($editing)
-            <select class="select select-bordered w-full" wire:model.defer="fullset_status">
+            @php
+              $phaseKeys = ['pending','working','complete'];
+              $phaseOptions = collect($statuses)->whereIn('key', $phaseKeys);
+            @endphp
+
+            <select class="select select-bordered w-full" wire:model.defer="fullset_status_id">
               <option value="">— Select status —</option>
-              @foreach($fullsetStatusOptions as $opt)
-                <option value="{{ $opt }}">{{ $opt }}</option>
+              @foreach($phaseOptions as $st)
+                <option value="{{ $st['id'] }}">{{ $st['label'] }}</option>
               @endforeach
             </select>
-            @error('fullset_status') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
+            @error('fullset_status_id') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
           @else
-            @php $fs = $project->fullset_status; @endphp
-            @if(!$fs)
-              <div>—</div>
-            @elseif($fs === "Full Set Complete")
-              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">{{ $fs }}</span>
+            @php
+              $fsKey   = $project->fullsetStatus?->key;
+              $fsLabel = $project->fullsetStatus?->label;
+              $palette = [
+                'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
+                'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
+                'complete'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
+              ];
+              $badge = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
+              $tone  = $palette[$fsKey] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
+            @endphp
+
+            @if($fsLabel)
+              <span class="{{ $badge }} {{ $tone }}">
+                <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $fsLabel }}
+              </span>
             @else
-              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">{{ $fs }}</span>
+              <div>—</div>
             @endif
           @endif
         </div>

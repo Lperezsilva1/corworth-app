@@ -35,12 +35,15 @@ final class ProjectsTable extends PowerGridComponent
 
     public function datasource(): Builder
     {
+        // Incluye relaciones de status por fase y general
         return Project::query()->with([
             'building',
             'seller',
             'drafterPhase1',
             'drafterFullset',
-            'status',
+            'status',           // general
+            'phase1Status',     // fase 1
+            'fullsetStatus',    // full set
         ]);
     }
 
@@ -51,15 +54,42 @@ final class ProjectsTable extends PowerGridComponent
             'seller'         => ['name_seller'],
             'drafterPhase1'  => ['name_drafter'],
             'drafterFullset' => ['name_drafter'],
+            // opcional: búsqueda por label de estados
+            'phase1Status'   => ['label'],
+            'fullsetStatus'  => ['label'],
+            'status'         => ['label'],
         ];
     }
 
     public function fields(): PowerGridFields
     {
+        // Paleta para chip de GENERAL
+        $palette = [
+            'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
+            'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
+            'complete'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+            'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
+            'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+            'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
+        ];
+        $badge = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
+
+        // Tono simple (solo texto) para columnas de fase
+        $toneText = [
+            'pending'  => 'text-zinc-600',
+            'working'  => 'text-amber-600',
+            'complete' => 'text-emerald-600',
+        ];
+        $icon = [
+            'pending'  => '•',
+            'working'  => '⏳',
+            'complete' => '✅',
+        ];
+
         return PowerGrid::fields()
             ->add('id')
 
-            // 🔹 Proyecto + Building en una sola columna
+            // Proyecto + Building
             ->add('project_with_building', fn($p) =>
                 '<div class="flex flex-col">
                     <a href="'.route('projects.show', ['project' => $p->id]).'" 
@@ -74,54 +104,49 @@ final class ProjectsTable extends PowerGridComponent
 
             ->add('seller_name', fn($p) => $p->seller?->name_seller ?? '—')
 
-            // 🔹 Drafter + status Phase 1
-            ->add('phase1_column', fn($p) =>
-                '<div class="flex flex-col items-start">
-                    <span class="font-medium text-gray-700">'
-                        . e($p->drafterPhase1?->name_drafter ?? '—') .
-                    '</span>
-                    <span class="text-xs">'
-                        . match ($p->phase1_status) {
-                            "Phase 1's Complete" => '<span class="text-green-600">✅ Complete</span>',
-                            "In Progress"        => '<span class="text-amber-600">⏳ In Progress</span>',
-                            default              => '<span class="text-gray-400">—</span>',
-                        } .
-                    '</span>
-                </div>'
-            )
+            // Phase 1: texto compacto (sin badge)
+            ->add('phase1_column', function ($p) use ($toneText, $icon) {
+                $label  = $p->phase1Status?->label;   // "Pending" / "Working" / "Complete"
+                $key    = $p->phase1Status?->key;     // 'pending' | 'working' | 'complete'
+                $tone   = $toneText[$key] ?? 'text-gray-500';
+                $glyph  = $icon[$key] ?? '•';
+                $drafter = e($p->drafterPhase1?->name_drafter ?? '—');
 
-            // 🔹 Drafter + status Full Set
-            ->add('fullset_column', fn($p) =>
-                '<div class="flex flex-col items-start">
-                    <span class="font-medium text-gray-700">'
-                        . e($p->drafterFullset?->name_drafter ?? '—') .
-                    '</span>
-                    <span class="text-xs">'
-                        . match ($p->fullset_status) {
-                            "Full Set Complete" => '<span class="text-green-600">✅ Complete</span>',
-                            "In Progress"       => '<span class="text-amber-600">⏳ In Progress</span>',
-                            default             => '<span class="text-gray-400">—</span>',
-                        } .
-                    '</span>
-                </div>'
-            )
+                $statusLine = $label
+                    ? '<span class="text-xs '.$tone.'">'.$glyph.' '.e($label).'</span>'
+                    : '<span class="text-xs text-gray-400">—</span>';
 
-            // 🔹 General status con chip
-            ->add('general_status_chip', function ($p) {
-                $palette = [
-                    'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
-                    'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
-                    'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
-                    'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                    'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
-                ];
+                return '<div class="flex flex-col items-start">
+                          <span class="font-medium text-gray-700">'.$drafter.'</span>
+                          '.$statusLine.'
+                        </div>';
+            })
 
-                $base  = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
-                $key   = $p->status?->key;
-                $tone  = $palette[$key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
+            // Full Set: texto compacto (sin badge)
+            ->add('fullset_column', function ($p) use ($toneText, $icon) {
+                $label  = $p->fullsetStatus?->label;
+                $key    = $p->fullsetStatus?->key;
+                $tone   = $toneText[$key] ?? 'text-gray-500';
+                $glyph  = $icon[$key] ?? '•';
+                $drafter = e($p->drafterFullset?->name_drafter ?? '—');
+
+                $statusLine = $label
+                    ? '<span class="text-xs '.$tone.'">'.$glyph.' '.e($label).'</span>'
+                    : '<span class="text-xs text-gray-400">—</span>';
+
+                return '<div class="flex flex-col items-start">
+                          <span class="font-medium text-gray-700">'.$drafter.'</span>
+                          '.$statusLine.'
+                        </div>';
+            })
+
+            // General: mantiene chip/badge
+            ->add('general_status_chip', function ($p) use ($palette, $badge) {
+                $key  = $p->status?->key;
+                $tone = $palette[$key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
 
                 return $p->status
-                    ? '<span class="'.$base.' '.$tone.'"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>'.e($p->general_status_label).'</span>'
+                    ? '<span class="'.$badge.' '.$tone.'"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>'.e($p->general_status_label).'</span>'
                     : '—';
             });
     }
