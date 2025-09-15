@@ -15,9 +15,10 @@ class Main extends Component
 
     // Datos UI
     public array $cards = [];
-    public array $panel = [];
     public array $pendingProjects = [];
     public array $activity = [];
+    public array $chart = []; // línea (created vs approved)
+    public array $pie   = []; // <- NUEVO: datos de la torta por status
 
     public function mount(): void
     {
@@ -39,12 +40,15 @@ class Main extends Component
         $pendingId  = $id('pending');
         $workingId  = $id('working');
         $approvedId = $id('approved');
+        $cancelId   = $id('cancelled');
 
         // Métricas base
         $total         = Project::count();
         $pendingCount  = $pendingId  ? Project::where('general_status',$pendingId)->count() : 0;
         $workingCount  = $workingId  ? Project::where('general_status',$workingId)->count() : 0;
         $approvedCount = $approvedId ? Project::where('general_status',$approvedId)->count() : 0;
+        $cancelledCount= $cancelId   ? Project::where('general_status',$cancelId)->count()   : 0;
+        $draftCount    = Project::whereNull('general_status')->count();
 
         $createdThisRange  = Project::whereBetween('created_at', [$from,$to])->count();
         $approvedThisRange = $approvedId
@@ -64,23 +68,13 @@ class Main extends Component
             ['title'=>'Approved','value'=>number_format($approvedCount),'delta'=>$this->deltaPct($approvedCount,$approvedPrev)],
         ];
 
-        // Panel lateral
-        $approvalRate = $total ? round(($approvedCount/$total)*100) : 0;
-        $progressPct  = $approvalRate;
-        $this->panel = [
-            'title' => 'Pipeline Status',
-            'sub'   => $this->rangeLabel($from,$to).' • Created: '.number_format($createdThisRange).' • Approved: '.number_format($approvedThisRange),
-            'badge' => ['label'=> $approvalRate.'% Approved'],
-            'steps' => [
-                ['label'=>'Pending','done'=> $pendingCount===0],
-                ['label'=>'In Progress','done'=> $workingCount===0 && $pendingCount===0],
-                ['label'=>'Approved','done'=> $approvedCount>0],
-                ['label'=>'Review','done'=> false],
-            ],
-            'bar'  => $progressPct,
-            'eta'  => $this->etaReadable($progressPct),
-            'left' => $this->leftReadable($progressPct),
-            'cta'  => ['label'=>'View Detailed Status','route'=>null],
+        // ===== Pie: distribución por status (incluye NULL como Draft) =====
+        $this->pie = [
+            ['label' => 'Approved',  'key'=>'approved',  'value' => $approvedCount],
+            ['label' => 'Working',   'key'=>'working',   'value' => $workingCount],
+            ['label' => 'Pending',   'key'=>'pending',   'value' => $pendingCount],
+            ['label' => 'Cancelled', 'key'=>'cancelled', 'value' => $cancelledCount],
+            ['label' => 'Draft',     'key'=>'draft',     'value' => $draftCount],
         ];
 
         // ===== Tabla: TODOS menos Approved y Cancelled (incluye NULL) =====
@@ -101,7 +95,6 @@ class Main extends Component
                 'status:id,label,key', // general
             ])
             ->when(!empty($excludeIds), function ($q) use ($excludeIds) {
-                // Incluir NULL y cualquier estado que NO esté en los excluidos
                 $q->where(function ($qq) use ($excludeIds) {
                     $qq->whereNull('general_status')
                        ->orWhereNotIn('general_status', $excludeIds);
@@ -121,7 +114,7 @@ class Main extends Component
                     'idx'          => $i + 1,
                     'id'           => $p->id,
                     'name'         => $p->project_name,
-                    'building'     => $p->building?->name_building, // si tienes 'code', cámbialo aquí
+                    'building'     => $p->building?->name_building,
                     'seller'       => $p->seller?->name_seller,
 
                     'p1_drafter'   => $p->drafterPhase1?->name_drafter,
@@ -140,48 +133,106 @@ class Main extends Component
             })
             ->all();
 
-            $this->activity = \App\Models\ProjectComment::query()
-    ->with(['project:id,project_name', 'user:id,name'])
-    ->orderByDesc('created_at')
-    ->limit(4)
-    ->get(['id','project_id','user_id','title','body','is_system','source','created_at'])
-    ->map(function ($c) {
-        $title = (string)($c->title ?? 'Activity');
-        $body  = (string)($c->body ?? '');
-        $src   = (string)($c->source ?? '');
+        // ===== Actividad (últimos 4) =====
+        $this->activity = \App\Models\ProjectComment::query()
+            ->with(['project:id,project_name','user:id,name'])
+            ->orderByDesc('created_at')
+            ->limit(4)
+            ->get(['id','project_id','user_id','title','body','is_system','source','created_at'])
+            ->map(function ($c) {
+                $title = (string)($c->title ?? 'Activity');
+                $body  = (string)($c->body ?? '');
+                $src   = (string)($c->source ?? '');
 
-        $txt = strtolower($title.' '.$body.' '.$src);
-        if (str_contains($txt, 'approved')) {
-            $icon='✅'; $color='text-success';
-        } elseif (str_contains($txt, 'awaiting') || str_contains($txt, 'approval')) {
-            $icon='⏳'; $color='text-warning';
-        } elseif (str_contains($txt, 'working')) {
-            $icon='⏳'; $color='text-info';
-        } elseif (str_contains($txt, 'pending')) {
-            $icon='⚪'; $color='text-base-content/60';
-        } elseif (str_contains($txt, 'cancel')) {
-            $icon='❌'; $color='text-error';
-        } elseif (str_contains($txt, 'auto update') || str_contains($txt, 'auto_diff')) {
-            $icon='📝'; $color='text-base-content/70';
-        } else {
-            $icon='💬'; $color='text-base-content/70';
-        }
+                $txt = strtolower($title.' '.$body.' '.$src);
+                if (str_contains($txt, 'approved')) {
+                    $icon='✅'; $color='text-success';
+                } elseif (str_contains($txt, 'awaiting') || str_contains($txt, 'approval')) {
+                    $icon='⏳'; $color='text-warning';
+                } elseif (str_contains($txt, 'working')) {
+                    $icon='⏳'; $color='text-info';
+                } elseif (str_contains($txt, 'pending')) {
+                    $icon='⚪'; $color='text-base-content/60';
+                } elseif (str_contains($txt, 'cancel')) {
+                    $icon='❌'; $color='text-error';
+                } elseif (str_contains($txt, 'auto update') || str_contains($txt, 'auto_diff')) {
+                    $icon='📝'; $color='text-base-content/70';
+                } else {
+                    $icon='💬'; $color='text-base-content/70';
+                }
 
-        return [
-            'id'        => $c->id,
-            'when'      => optional($c->created_at)->diffForHumans(),
-            'title'     => $title,
-            'body'      => \Illuminate\Support\Str::limit($body, 140),
-            'projectId' => $c->project?->id,
-            'project'   => $c->project?->project_name,
-            'user'      => $c->user?->name ?? 'System',
-            'icon'      => $icon,
-            'color'     => $color,
-        ];
-    })
-    ->all();
+                return [
+                    'id'        => $c->id,
+                    'when'      => optional($c->created_at)->diffForHumans(),
+                    'title'     => $title,
+                    'body'      => \Illuminate\Support\Str::limit($body, 140),
+                    'projectId' => $c->project?->id,
+                    'project'   => $c->project?->project_name,
+                    'user'      => $c->user?->name ?? 'System',
+                    'icon'      => $icon,
+                    'color'     => $color,
+                ];
+            })
+            ->all();
+
+        // ===== Línea: Created vs Approved (últimas 8 semanas) =====
+        $this->chart = $this->buildWeeklyChart($approvedId);
     }
 
+    protected function buildWeeklyChart(?int $approvedId): array
+{
+    // Usamos lunes como inicio de semana
+    $end   = now()->startOfWeek(\Carbon\CarbonInterface::MONDAY);
+    $start = (clone $end)->subWeeks(7);
+
+    // Etiquetas y semanas (8 semanas: start .. end)
+    $labels  = [];
+    $wStarts = [];
+    for ($i = 0; $i < 8; $i++) {
+        $w = (clone $start)->addWeeks($i);
+        $labels[]  = $w->format('M d');
+        $wStarts[] = $w->toDateString(); // YYYY-MM-DD del lunes
+    }
+
+    // === Created por semana (en PHP) ===
+    $createdRows = \App\Models\Project::query()
+        ->where('created_at', '>=', $start)
+        ->get(['created_at']);
+
+    $createdByWeek = [];
+    foreach ($createdRows as $p) {
+        $w = $p->created_at->copy()->startOfWeek(\Carbon\CarbonInterface::MONDAY)->toDateString();
+        $createdByWeek[$w] = ($createdByWeek[$w] ?? 0) + 1;
+    }
+
+    // === Approved por semana (en PHP) ===
+    $approvedByWeek = [];
+    if ($approvedId) {
+        $approvedRows = \App\Models\Project::query()
+            ->where('general_status', $approvedId)
+            ->where('updated_at', '>=', $start)
+            ->get(['updated_at']);
+
+        foreach ($approvedRows as $p) {
+            $w = $p->updated_at->copy()->startOfWeek(\Carbon\CarbonInterface::MONDAY)->toDateString();
+            $approvedByWeek[$w] = ($approvedByWeek[$w] ?? 0) + 1;
+        }
+    }
+
+    // Mapear a las 8 semanas exactas (0 si no hay)
+    $created  = [];
+    $approved = [];
+    foreach ($wStarts as $w) {
+        $created[]  = (int) ($createdByWeek[$w]  ?? 0);
+        $approved[] = (int) ($approvedByWeek[$w] ?? 0);
+    }
+
+    return [
+        'labels'   => $labels,
+        'created'  => $created,
+        'approved' => $approved,
+    ];
+}
     /** ===== Helpers ===== */
 
     protected function currentRange(): array
@@ -219,21 +270,5 @@ class Main extends Component
         $pct = (($current - $previous) / max(1e-9, $previous)) * 100;
         $sign = $pct >= 0 ? '+' : '';
         return $sign.number_format($pct, 1).'%';
-    }
-
-    protected function etaReadable(int $progress): string
-    {
-        return $progress >= 90 ? '1–2 days' : ($progress >= 60 ? '3–5 days' : 'About a week');
-    }
-
-    protected function leftReadable(int $progress): string
-    {
-        $days = $progress >= 90 ? 2 : ($progress >= 60 ? 5 : 7);
-        return '~'.$days.' days';
-    }
-
-    public function render()
-    {
-        return view('livewire.dashboard.main');
     }
 }
