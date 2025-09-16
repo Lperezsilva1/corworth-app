@@ -209,8 +209,9 @@ class ProjectsShow extends Component
         $this->project->update($data);
         // Asegúrate que el modelo tenga los últimos valores antes de recalcular
         $this->project->refresh();
-        // Reglas: complete+complete => awaiting_approval; si hay drafters => working; sin drafters => pending; no baja si approved/deviated/awaiting_approval
-        $this->project->recalcGeneralStatus(); // <- respeta flujo
+        // Reglas: complete+complete => awaiting_approval; si hay drafters => working; sin drafters => pending;
+        // respeta 'approved', 'cancelled', 'awaiting_approval', 'deviated' (según tu modelo)
+        $this->project->recalcGeneralStatus();
 
         // Vuelve a leer después del recálculo para el diff
         $after = $this->project->fresh()->only($track);
@@ -295,7 +296,6 @@ class ProjectsShow extends Component
     /** Botón: Aprobar (desde awaiting_approval o deviated) si ambas fases están complete */
     public function approveProject(): void
     {
-        // Lee estado actual desde DB (evita usar caché en memoria)
         $p = $this->project->fresh(['phase1Status','fullsetStatus','status']);
 
         // Validar que ambas fases estén "complete"
@@ -349,10 +349,111 @@ class ProjectsShow extends Component
         ]);
     }
 
+    /** Botón: marcar Phase 1 como Complete (auto end_date) */
+    public function markPhase1Complete(): void
+    {
+        $p = $this->project->fresh(['phase1Status','fullsetStatus','status']);
+
+        // Reglas previas
+        if (!$p->phase1_drafter_id || !$p->phase1_start_date) {
+            session()->flash('error', 'Assign a Phase 1 drafter and start date first.');
+            return;
+        }
+        if ($p->phase1Status?->key === 'complete') {
+            session()->flash('success', 'Phase 1 is already complete.');
+            return;
+        }
+
+        $completeId = Status::where('key','complete')->value('id');
+        if (!$completeId) {
+            session()->flash('error', "Status 'complete' not found.");
+            return;
+        }
+
+        // Persistir en DB (el modelo sellará end_date si faltaba)
+        $p->phase1_status_id  = $completeId;
+        if (!$p->phase1_start_date) $p->phase1_start_date = now();
+        if (!$p->phase1_end_date)   $p->phase1_end_date   = now();
+        $p->saveQuietly();
+
+        // Recalcular general si aplica
+        $p->recalcGeneralStatus();
+
+        // 🔄 Sincronizar props Livewire (evita que Save lo “borre”)
+        $this->phase1_status_id = $completeId;
+        $this->phase1_end_date  = optional($p->phase1_end_date)->format('Y-m-d');
+
+        // Refrescar relación/labels para la vista
+        $this->project = $p->fresh(['phase1Status','fullsetStatus','status']);
+
+        // (opcional) auditoría
+        ProjectComment::create([
+            'project_id' => $p->id,
+            'user_id'    => Auth::id(),
+            'title'      => 'Phase 1 completed',
+            'body'       => 'Phase 1 marked as Complete (end date set to today).',
+            'is_system'  => true,
+            'source'     => 'phase1_complete_button',
+        ]);
+
+        session()->flash('success', 'Phase 1 marked as complete.');
+        $this->dispatch('comment-added');
+    }
+
+    /** Botón: marcar Full Set como Complete (auto end_date) */
+    public function markFullsetComplete(): void
+    {
+        $p = $this->project->fresh(['phase1Status','fullsetStatus','status']);
+
+        // Reglas previas
+        if (!$p->fullset_drafter_id || !$p->fullset_start_date) {
+            session()->flash('error', 'Assign a Full Set drafter and start date first.');
+            return;
+        }
+        if ($p->fullsetStatus?->key === 'complete') {
+            session()->flash('success', 'Full Set is already complete.');
+            return;
+        }
+
+        $completeId = Status::where('key','complete')->value('id');
+        if (!$completeId) {
+            session()->flash('error', "Status 'complete' not found.");
+            return;
+        }
+
+        // Persistir en DB (el modelo sellará end_date si faltaba)
+        $p->fullset_status_id  = $completeId;
+        if (!$p->fullset_start_date) $p->fullset_start_date = now();
+        if (!$p->fullset_end_date)   $p->fullset_end_date   = now();
+        $p->saveQuietly();
+
+        // Recalcular general si aplica
+        $p->recalcGeneralStatus();
+
+        // 🔄 Sincronizar props Livewire
+        $this->fullset_status_id = $completeId;
+        $this->fullset_end_date  = optional($p->fullset_end_date)->format('Y-m-d');
+
+        // Refrescar relación/labels para la vista
+        $this->project = $p->fresh(['phase1Status','fullsetStatus','status']);
+
+        // Auditoría
+        ProjectComment::create([
+            'project_id' => $p->id,
+            'user_id'    => Auth::id(),
+            'title'      => 'Full Set completed',
+            'body'       => 'Full Set marked as Complete (end date set to today).',
+            'is_system'  => true,
+            'source'     => 'fullset_complete_button',
+        ]);
+
+        session()->flash('success', 'Full Set marked as complete.');
+        $this->dispatch('comment-added');
+    }
+
     /** Botón: Desviar a "deviated" (solo desde awaiting_approval) */
     public function markAsDeviated(): void
     {
-        // Cargar estado actual
         $p = $this->project->fresh(['status','phase1Status','fullsetStatus']);
 
         // Solo permitir desvío desde awaiting_approval
@@ -361,7 +462,6 @@ class ProjectsShow extends Component
             return;
         }
 
-        // Cambiar general a deviated
         $deviatedId = Status::where('key', 'deviated')->value('id');
         if (!$deviatedId) {
             session()->flash('error', "Status 'deviated' not found.");
@@ -371,7 +471,6 @@ class ProjectsShow extends Component
         $p->general_status = $deviatedId;
         $p->saveQuietly();
 
-        // Auditar
         ProjectComment::create([
             'project_id' => $p->id,
             'user_id'    => Auth::id(),
@@ -383,7 +482,6 @@ class ProjectsShow extends Component
 
         session()->flash('success', 'Project moved to Deviated.');
 
-        // Refrescar
         $this->project = $p->fresh([
             'building','seller','drafterPhase1','drafterFullset',
             'status','phase1Status','fullsetStatus'

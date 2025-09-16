@@ -62,14 +62,46 @@ class Project extends Model
         'deleted_at'                  => 'datetime',
     ];
 
-    /** Defaults seguros por key (no dependas de id=1) */
+    /** Defaults seguros por key + auto-estado/fechas */
     protected static function booted(): void
     {
+        // Defaults a 'pending' + sellar fechas si ya vienen asignadas/complete al crear
         static::creating(function (Project $p) {
-            $pendingId = Status::where('key', 'pending')->value('id');
+            $pendingId = Status::where('key','pending')->value('id');
             if (is_null($p->general_status))     $p->general_status     = $pendingId;
             if (is_null($p->phase1_status_id))   $p->phase1_status_id   = $pendingId;
             if (is_null($p->fullset_status_id))  $p->fullset_status_id  = $pendingId;
+
+            // Si al crear ya viene drafter asignado -> poner estado en 'working' si estaba vacío/pending
+            if ($p->phase1_drafter_id && ( ! $p->phase1_status_id || self::statusKeyById($p->phase1_status_id) === 'pending')) {
+                $p->phase1_status_id = self::statusIdByKey('working');
+            }
+            if ($p->fullset_drafter_id && ( ! $p->fullset_status_id || self::statusKeyById($p->fullset_status_id) === 'pending')) {
+                $p->fullset_status_id = self::statusIdByKey('working');
+            }
+
+            // start_date si ya hay drafter asignado al crear
+            if ($p->phase1_drafter_id && empty($p->phase1_start_date)) {
+                $p->phase1_start_date = now();
+            }
+            if ($p->fullset_drafter_id && empty($p->fullset_start_date)) {
+                $p->fullset_start_date = now();
+            }
+
+            // Si vienen en 'complete', sellar fechas faltantes
+            if ($p->phase1_status_id && self::statusKeyById($p->phase1_status_id) === 'complete') {
+                if (empty($p->phase1_start_date)) $p->phase1_start_date = now();
+                if (empty($p->phase1_end_date))   $p->phase1_end_date   = now();
+            }
+            if ($p->fullset_status_id && self::statusKeyById($p->fullset_status_id) === 'complete') {
+                if (empty($p->fullset_start_date)) $p->fullset_start_date = now();
+                if (empty($p->fullset_end_date))   $p->fullset_end_date   = now();
+            }
+        });
+
+        // 👇 Antes de guardar un update, aplica la automatización
+        static::updating(function (Project $p) {
+            $p->applyAutoPhaseDates();
         });
     }
 
@@ -239,8 +271,63 @@ class Project extends Model
        ===================== */
 
     /**
+     * Automatiza por fase (independientes):
+     * - Al asignar drafter: si status estaba vacío/pending y NO lo cambiaron manualmente, subir a 'working'.
+     * - start_date: 1ª vez que se asigna drafter (si está vacío).
+     * - end_date: al cambiar status a 'complete' (si está vacío).
+     * No limpiamos end_date si reabren (histórico).
+     */
+    protected function applyAutoPhaseDates(): void
+    {
+        /* ========== PHASE 1 ========== */
+        if ($this->isDirty('phase1_drafter_id') && $this->phase1_drafter_id) {
+            // Subir a 'working' si no cambiaron manualmente el status y estaba vacío/pending
+            if (! $this->isDirty('phase1_status_id')) {
+                $curr = self::statusKeyById($this->phase1_status_id);
+                if (! $curr || $curr === 'pending') {
+                    $this->phase1_status_id = self::statusIdByKey('working');
+                }
+            }
+            // start_date auto si estaba vacío
+            if (empty($this->phase1_start_date)) {
+                $this->phase1_start_date = now();
+            }
+        }
+
+        // Si pasa a 'complete', sellar fechas
+        if ($this->isDirty('phase1_status_id') && $this->phase1_status_id) {
+            $p1Key = self::statusKeyById($this->phase1_status_id);
+            if ($p1Key === 'complete') {
+                if (empty($this->phase1_start_date)) $this->phase1_start_date = now();
+                if (empty($this->phase1_end_date))   $this->phase1_end_date   = now();
+            }
+        }
+
+        /* ========== FULL SET ========== */
+        if ($this->isDirty('fullset_drafter_id') && $this->fullset_drafter_id) {
+            if (! $this->isDirty('fullset_status_id')) {
+                $curr = self::statusKeyById($this->fullset_status_id);
+                if (! $curr || $curr === 'pending') {
+                    $this->fullset_status_id = self::statusIdByKey('working');
+                }
+            }
+            if (empty($this->fullset_start_date)) {
+                $this->fullset_start_date = now();
+            }
+        }
+
+        if ($this->isDirty('fullset_status_id') && $this->fullset_status_id) {
+            $fsKey = self::statusKeyById($this->fullset_status_id);
+            if ($fsKey === 'complete') {
+                if (empty($this->fullset_start_date)) $this->fullset_start_date = now();
+                if (empty($this->fullset_end_date))   $this->fullset_end_date   = now();
+            }
+        }
+    }
+
+    /**
      * Recalcula el estado general si NO está en estados terminales del flujo de revisión.
-     * Flujo esperado:
+     * Flujo:
      * pending -> working -> awaiting_approval -> (approved | deviated -> approved)
      */
     public function recalcGeneralStatus(bool $save = true): void
@@ -257,11 +344,8 @@ class Project extends Model
         $hasAssignments = (bool) ($this->phase1_drafter_id || $this->fullset_drafter_id);
 
         $newKey =
-            // ambas fases completas => awaiting_approval
             ($p1 === 'complete' && $fs === 'complete') ? 'awaiting_approval'
-            // si alguna fase está working O hay drafters asignados => working
             : (($p1 === 'working' || $fs === 'working' || $hasAssignments) ? 'working'
-            // si no, pending
             : 'pending');
 
         $newId = self::statusIdByKey($newKey);
@@ -290,7 +374,6 @@ class Project extends Model
 
     /**
      * Pasa el proyecto a estado general "deviated" SOLO si está en 'awaiting_approval'
-     * (no toca estados de fase; ya deben estar 'complete' para haber llegado aquí)
      */
     public function markAsDeviated(): bool
     {

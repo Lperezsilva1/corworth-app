@@ -1,6 +1,5 @@
 <div class="p-6" x-data>
   {{-- ===== Floating Toast (auto-hide + dismiss) ===== --}}
-  <div class="p-6" x-data>
   {{-- ===== Floating Toast SUCCESS ===== --}}
   <div
     x-data="{ show: {{ session()->has('success') ? 'true' : 'false' }}, msg: @js(session('success')) }"
@@ -35,7 +34,6 @@
     </div>
   </div>
 
-
   {{-- ===== Header ===== --}}
   <x-breadcrumbs :items="[
     ['label' => 'Home', 'url' => url('/')],
@@ -68,21 +66,53 @@
       </div>
     </div>
 
-    <div class="flex gap-2">
-      @if(!$editing)
-        <button wire:click="startEdit" class="btn btn-primary">Edit</button>
-        <a wire:navigate href="{{ route('projects.index') }}" class="btn">Back</a>
-      @else
-        <button wire:click="saveEdit" class="btn btn-primary" wire:loading.attr="disabled">Save</button>
-        <button wire:click="cancelEdit" class="btn" wire:loading.attr="disabled">Cancel</button>
-      @endif
-    </div>
+   <div class="flex items-center gap-2">
+  @if(!$editing)
+    {{-- EDIT con spinner inline --}}
+    <button
+      type="button"
+      wire:click="startEdit"
+      wire:target="startEdit"
+      wire:loading.attr="disabled"
+      class="btn btn-primary flex items-center gap-2 min-w-[110px] justify-center"
+    >
+      <span wire:loading wire:target="startEdit" class="loading loading-spinner loading-xs"></span>
+      <span wire:loading.remove wire:target="startEdit">Edit</span>
+      <span wire:loading.delay wire:target="startEdit">Loading…</span>
+    </button>
+
+    <a wire:navigate href="{{ route('projects.index') }}" class="btn">Back</a>
+  @else
+    {{-- SAVE con spinner inline (igual al de Edit) --}}
+    <button
+      type="button"
+      wire:click="saveEdit"
+      wire:target="saveEdit"
+      wire:loading.attr="disabled"
+      wire:loading.class="loading"
+      class="btn btn-primary "
+    >
+      Save
+    </button>
+
+     <button
+      type="button"
+      wire:click="cancelEdit"
+      wire:target="cancelEdit"
+      wire:loading.attr="disabled"
+      class="btn"
+    >
+      Cancel
+    </button>
+  @endif
+</div>
+
   </div>
 
   <flux:separator variant="subtle" class="my-2" />
 
   {{-- ===== Tabs (DaisyUI) ===== --}}
-  <div role="tablist" class="tabs tabs-boxed tabs-lift" wire:loading.class="opacity-60 pointer-events-none">
+  <div role="tablist" class="tabs tabs-boxed tabs-lift" wire:loading.class="opacity-60 pointer-events-none" >
 
     {{-- ===================== TAB: General ===================== --}}
     <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="General Information" checked />
@@ -140,79 +170,53 @@
           <div class="px-4 py-4">
             <div class="text-xs font-semibold text-base-content/60 mb-2">General status</div>
 
-            @if($editing)
-              @php
-                $current = collect($statuses)->firstWhere('id', (int) ($general_status ?? $project->general_status));
-                $key     = $current['key'] ?? null;
-                $label   = $current['label'] ?? null;
+            @php
+              $current = collect($statuses)->firstWhere('id', (int) ($editing ? ($general_status ?? $project->general_status) : $project->general_status));
+              $key     = $current['key'] ?? null;
+              $label   = $current['label'] ?? null;
 
-                $palette = [
-                  'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
-                  'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
-                  'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
-                  'deviated'          => 'bg-amber-100 text-amber-800 ring-amber-300', 
-                  'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                  'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
-                ];
-                $badge   = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
-                $tone    = $palette[$key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
-              @endphp
+              $palette = [
+                'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
+                'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
+                'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                'deviated'          => 'bg-amber-100 text-amber-800 ring-amber-300',
+                'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
+              ];
+              $badge   = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
+              $tone    = $palette[$key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
+            @endphp
 
-              <div class="flex items-center gap-3">
-                @if($label)
-                  <span class="{{ $badge }} {{ $tone }}">
-                    <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $label }}
-                  </span>
-                @endif
-              </div>
-
-              @error('general_status') <p class="text-error text-xs mt-1">{{ $message }}</p> @enderror
-            @else
-              @php
-                $key   = $project->status?->key;
-                $label = $project->general_status_label;
-                $palette = [
-                  'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
-                  'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
-                  'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
-                  'deviated'          => 'bg-amber-100 text-amber-800 ring-amber-300', 
-                  'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                  'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
-                ];
-                $badge = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
-                $tone  = $palette[$key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
-              @endphp
-
-              @if($project->status)
-                <div class="flex items-center flex-wrap gap-3">
-                  <span class="{{ $badge }} {{ $tone }}">
-                    <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $label }}
-                  </span>
-
-                  {{-- ↩︎ Deviated: SOLO cuando está en awaiting_approval --}}
-               {{-- ↩︎ Deviated: SOLO cuando está en awaiting_approval --}}
-@if ($project->isGeneral('awaiting_approval'))
-  <button class="btn btn-warning btn-sm"
-          @click="$dispatch('open-deviate-modal')">
-    ↩︎ Deviated
-  </button>
-@endif
-
-{{-- ✅ Approve: awaiting_approval o deviated, y ambas fases en complete --}}
-@php $generalKey = \App\Models\Project::statusKeyById($project->general_status); @endphp
-@if (in_array($generalKey, ['awaiting_approval','deviated'], true)
-     && ($project->phase1Status?->key === 'complete')
-     && ($project->fullsetStatus?->key === 'complete'))
-  <button class="btn btn-success btn-sm"
-          @click="$dispatch('open-approve-modal')">
-    ✅ Approve
-  </button>
-@endif
-                </div>
-              @else
-                —
+            <div class="flex items-center flex-wrap gap-3">
+              @if($label)
+                <span class="{{ $badge }} {{ $tone }}">
+                  <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $label }}
+                </span>
               @endif
-            @endif
+
+              @if(!$editing)
+                {{-- ↩︎ Deviated: SOLO cuando está en awaiting_approval --}}
+                @if ($project->isGeneral('awaiting_approval'))
+                  <button class="btn btn-warning btn-sm"
+                          @click="$dispatch('open-deviate-modal')">
+                    ↩︎ Deviated
+                  </button>
+                @endif
+
+                {{-- ✅ Approve: awaiting_approval o deviated, y ambas fases en complete --}}
+                @php $generalKey = \App\Models\Project::statusKeyById($project->general_status); @endphp
+                @if (in_array($generalKey, ['awaiting_approval','deviated'], true)
+                     && ($project->phase1Status?->key === 'complete')
+                     && ($project->fullsetStatus?->key === 'complete'))
+                  <button class="btn btn-success btn-sm"
+                          @click="$dispatch('open-approve-modal')">
+                    ✅ Approve
+                  </button>
+                @endif
+              @endif
+            </div>
+
+            @error('general_status') <p class="text-error text-xs mt-1">{{ $message }}</p> @enderror
           </div>
 
           <div class="border-t border-base-300"></div>
@@ -378,65 +382,101 @@
         </div>
       </div>
     </div>
-{{-- ===================== Modals ===================== --}}
 
-{{-- Modal: Deviated --}}
-<div x-data
-     x-on:open-deviate-modal.window="$refs.deviateDialog.showModal()"
-     class="relative">
-  <dialog x-ref="deviateDialog" class="modal" x-on:keydown.escape="$refs.deviateDialog.close()">
-    <div class="modal-box">
-      <h3 class="font-bold text-lg">Move to Deviated</h3>
-      <p class="py-3 text-sm">
-        This will return the project to <span class="font-semibold">Deviated</span> for internal reviews.
-        You can approve later once everything is ready.
-      </p>
 
-      <div class="modal-action">
-        <button class="btn"
-                @click="$refs.deviateDialog.close()">
-          Cancel
-        </button>
 
-        <button class="btn btn-warning"
-                wire:click="markAsDeviated"
-                wire:loading.attr="disabled"
-                wire:target="markAsDeviated"
-                @click="$refs.deviateDialog.close()">
-          Confirm Deviated
-        </button>
-      </div>
+    
+
+    {{-- ===================== Modals ===================== --}}
+    {{-- Modal: Deviated --}}
+    <div x-data
+         x-on:open-deviate-modal.window="$refs.deviateDialog.showModal()"
+         class="relative">
+      <dialog x-ref="deviateDialog" class="modal" x-on:keydown.escape="$refs.deviateDialog.close()">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg">Move to Deviated</h3>
+          <p class="py-3 text-sm">
+            This will return the project to <span class="font-semibold">Deviated</span> for internal reviews.
+            You can approve later once everything is ready.
+          </p>
+
+          <div class="modal-action">
+            <button class="btn"
+                    @click="$refs.deviateDialog.close()">
+              Cancel
+            </button>
+
+            <button class="btn btn-warning"
+                    wire:click="markAsDeviated"
+                    wire:loading.attr="disabled"
+                    wire:target="markAsDeviated"
+                    @click="$refs.deviateDialog.close()">
+              Confirm Deviated
+            </button>
+          </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
     </div>
-    <form method="dialog" class="modal-backdrop">
-      <button>close</button>
-    </form>
-  </dialog>
-</div>
 
-{{-- Modal: Approve --}}
+    {{-- Modal: Approve --}}
+    <div x-data
+         x-on:open-approve-modal.window="$refs.approveDialog.showModal()"
+         class="relative">
+      <dialog x-ref="approveDialog" class="modal" x-on:keydown.escape="$refs.approveDialog.close()">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg">Approve project</h3>
+          <p class="py-3 text-sm">
+            This will mark the project as <span class="font-semibold">Approved</span>.
+            Make sure both phases are <em>Complete</em>.
+          </p>
+
+          <div class="modal-action">
+            <button class="btn"
+                    @click="$refs.approveDialog.close()">
+              Cancel
+            </button>
+
+            <button class="btn btn-success"
+                    wire:click="approveProject"
+                    wire:loading.attr="disabled"
+                    wire:target="approveProject"
+                    @click="$refs.approveDialog.close()">
+              Confirm Approve
+            </button>
+          </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
+    </div>
+
+{{-- Modal: Phase 1 Complete (mini) --}}
 <div x-data
-     x-on:open-approve-modal.window="$refs.approveDialog.showModal()"
+     x-on:open-phase1-complete-modal.window="$refs.p1CompleteDialog.showModal()"
      class="relative">
-  <dialog x-ref="approveDialog" class="modal" x-on:keydown.escape="$refs.approveDialog.close()">
-    <div class="modal-box">
-      <h3 class="font-bold text-lg">Approve project</h3>
-      <p class="py-3 text-sm">
-        This will mark the project as <span class="font-semibold">Approved</span>.
-        Make sure both phases are <em>Complete</em>.
+  <dialog x-ref="p1CompleteDialog" class="modal" x-on:keydown.escape="$refs.p1CompleteDialog.close()">
+    <div class="modal-box w-11/12 max-w-sm">
+      <h3 class="font-bold text-lg">Complete Phase 1</h3>
+      <p class="py-2 text-sm">
+        This will set Phase 1 status to <span class="font-semibold">Complete</span> and stamp the end date as today.
       </p>
 
       <div class="modal-action">
-        <button class="btn"
-                @click="$refs.approveDialog.close()">
+        <button class="btn btn-ghost"
+                @click="$refs.p1CompleteDialog.close()">
           Cancel
         </button>
 
         <button class="btn btn-success"
-                wire:click="approveProject"
+                wire:click="markPhase1Complete"
                 wire:loading.attr="disabled"
-                wire:target="approveProject"
-                @click="$refs.approveDialog.close()">
-          Confirm Approve
+                wire:target="markPhase1Complete"
+                @click="$refs.p1CompleteDialog.close()">
+          Confirm
         </button>
       </div>
     </div>
@@ -445,7 +485,37 @@
     </form>
   </dialog>
 </div>
-{{-- ===================== /Modals ===================== --}}
+
+
+{{-- Modal: Full Set Complete (mini) --}}
+<div x-data
+     x-on:open-fullset-complete-modal.window="$refs.fsCompleteDialog.showModal()"
+     class="relative">
+  <dialog x-ref="fsCompleteDialog" class="modal" x-on:keydown.escape="$refs.fsCompleteDialog.close()">
+    <div class="modal-box w-11/12 max-w-sm">
+      <h3 class="font-bold text-lg">Complete Full Set</h3>
+      <p class="py-2 text-sm">
+        This will set Full Set to <span class="font-semibold">Complete</span> and stamp the end date as today.
+      </p>
+
+      <div class="modal-action">
+        <button class="btn btn-ghost" @click="$refs.fsCompleteDialog.close()">Cancel</button>
+        <button class="btn btn-success"
+                wire:click="markFullsetComplete"
+                wire:loading.attr="disabled"
+                wire:target="markFullsetComplete"
+                @click="$refs.fsCompleteDialog.close()">
+          Confirm
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+  </dialog>
+</div>
+
+
+    {{-- ===================== /Modals ===================== --}}
+
     {{-- ===================== TAB: Phase 1 ===================== --}}
     <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Phase 1" />
     <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-5">
@@ -469,35 +539,22 @@
 
         <div>
           <div class="text-sm text-base-content/70 mb-1">Status</div>
-          @if($editing)
-            @php
-              $phaseKeys = ['pending','working','complete'];
-              $phaseOptions = collect($statuses)->whereIn('key', $phaseKeys);
-            @endphp
+          @php
+            $p1Key   = $project->phase1Status?->key;
+            $p1Label = $project->phase1Status?->label;
+            $palette = [
+              'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
+              'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
+              'complete'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+              'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
+              'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+              'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
+            ];
+            $badge = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
+            $tone  = $palette[$p1Key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
+          @endphp
 
-            <select class="select select-bordered w-full" wire:model.defer="phase1_status_id">
-              <option value="">— Select status —</option>
-              @foreach($phaseOptions as $st)
-                <option value="{{ $st['id'] }}">{{ $st['label'] }}</option>
-              @endforeach
-            </select>
-            @error('phase1_status_id') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
-          @else
-            @php
-              $p1Key   = $project->phase1Status?->key;
-              $p1Label = $project->phase1Status?->label;
-              $palette = [
-                'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
-                'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
-                'complete'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
-                'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
-              ];
-              $badge = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
-              $tone  = $palette[$p1Key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
-            @endphp
-
+          <div class="flex items-center gap-3 flex-wrap">
             @if($p1Label)
               <span class="{{ $badge }} {{ $tone }}">
                 <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $p1Label }}
@@ -505,34 +562,41 @@
             @else
               <div>—</div>
             @endif
-          @endif
+
+            @if($editing)
+             {{-- Botón: Mark Phase 1 Complete (solo si: NO complete, hay drafter y hay start_date) --}}
+                @if($project->phase1Status?->key !== 'complete'
+                    && $project->phase1_drafter_id
+                    && $project->phase1_start_date)
+                  <button
+                    class="btn btn-sm btn-success"
+                    @click="$dispatch('open-phase1-complete-modal')"
+                  >
+                    Mark Phase 1 Complete
+                  </button>
+                @endif
+              @error('phase1_status_id') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
+            @endif
+          </div>
         </div>
 
         <div>
           <div class="text-sm text-base-content/70 mb-1">Duration</div>
           <div class="font-medium">
-           {{ $project->phase1_duration ? $project->phase1_duration.' days' : '—' }}
+            {{ $project->phase1_duration ? $project->phase1_duration.' days' : '—' }}
           </div>
         </div>
 
         <div>
           <div class="text-sm text-base-content/70 mb-1">Start</div>
-          @if($editing)
-            <input type="date" class="input input-bordered w-full" wire:model.defer="phase1_start_date">
-            @error('phase1_start_date') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
-          @else
-            <div class="font-medium">{{ optional($project->phase1_start_date)->format('Y-m-d') ?? '—' }}</div>
-          @endif
+          <div class="font-medium">{{ optional($project->phase1_start_date)->format('Y-m-d') ?? '—' }}</div>
+          @error('phase1_start_date') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
         <div>
           <div class="text-sm text-base-content/70 mb-1">End</div>
-          @if($editing)
-            <input type="date" class="input input-bordered w-full" wire:model.defer="phase1_end_date">
-            @error('phase1_end_date') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
-          @else
-            <div class="font-medium">{{ optional($project->phase1_end_date)->format('Y-m-d') ?? '—' }}</div>
-          @endif
+          <div class="font-medium">{{ optional($project->phase1_end_date)->format('Y-m-d') ?? '—' }}</div>
+          @error('phase1_end_date') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
         </div>
       </div>
     </div>
@@ -560,35 +624,22 @@
 
         <div>
           <div class="text-sm text-base-content/70 mb-1">Status</div>
-          @if($editing)
-            @php
-              $phaseKeys = ['pending','working','complete'];
-              $phaseOptions = collect($statuses)->whereIn('key', $phaseKeys);
-            @endphp
+          @php
+            $fsKey   = $project->fullsetStatus?->key;
+            $fsLabel = $project->fullsetStatus?->label;
+            $palette = [
+              'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
+              'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
+              'complete'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+              'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
+              'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+              'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
+            ];
+            $badge = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
+            $tone  = $palette[$fsKey] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
+          @endphp
 
-            <select class="select select-bordered w-full" wire:model.defer="fullset_status_id">
-              <option value="">— Select status —</option>
-              @foreach($phaseOptions as $st)
-                <option value="{{ $st['id'] }}">{{ $st['label'] }}</option>
-              @endforeach
-            </select>
-            @error('fullset_status_id') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
-          @else
-            @php
-              $fsKey   = $project->fullsetStatus?->key;
-              $fsLabel = $project->fullsetStatus?->label;
-              $palette = [
-                'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
-                'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
-                'complete'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
-                'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
-              ];
-              $badge = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
-              $tone  = $palette[$fsKey] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
-            @endphp
-
+          <div class="flex items-center gap-3 flex-wrap">
             @if($fsLabel)
               <span class="{{ $badge }} {{ $tone }}">
                 <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $fsLabel }}
@@ -596,7 +647,20 @@
             @else
               <div>—</div>
             @endif
-          @endif
+
+            @if($editing)
+              {{-- Botón: Mark Full Set Complete (solo si: NO complete, hay drafter y hay start_date) --}}
+              @if($project->fullsetStatus?->key !== 'complete'
+                && $project->fullset_drafter_id
+                && $project->fullset_start_date)
+                <button class="btn btn-sm btn-success"
+                        @click="$dispatch('open-fullset-complete-modal')">
+                  Mark Full Set Complete
+                </button>
+            @endif
+              @error('fullset_status_id') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
+            @endif
+          </div>
         </div>
 
         <div>
@@ -608,22 +672,14 @@
 
         <div>
           <div class="text-sm text-base-content/70 mb-1">Start</div>
-          @if($editing)
-            <input type="date" class="input input-bordered w-full" wire:model.defer="fullset_start_date">
-            @error('fullset_start_date') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
-          @else
-            <div class="font-medium">{{ optional($project->fullset_start_date)->format('Y-m-d') ?? '—' }}</div>
-          @endif
+          <div class="font-medium">{{ optional($project->fullset_start_date)->format('Y-m-d') ?? '—' }}</div>
+          @error('fullset_start_date') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
         <div>
           <div class="text-sm text-base-content/70 mb-1">End</div>
-          @if($editing)
-            <input type="date" class="input input-bordered w-full" wire:model.defer="fullset_end_date">
-            @error('fullset_end_date') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
-          @else
-            <div class="font-medium">{{ optional($project->fullset_end_date)->format('Y-m-d') ?? '—' }}</div>
-          @endif
+          <div class="font-medium">{{ optional($project->fullset_end_date)->format('Y-m-d') ?? '—' }}</div>
+          @error('fullset_end_date') <p class="text-error text-sm mt-1">{{ $message }}</p> @enderror
         </div>
       </div>
     </div>
