@@ -16,10 +16,13 @@ use App\Livewire\Projects\ProjectsShow;       // detalle
 use App\Livewire\Dashboard\Main as DashboardMain;
 use App\Models\ProjectCommentAttachment;       // 👈 modelo de adjuntos
 use App\Livewire\Activity\Index as ActivityIndex;
+use App\Livewire\Projects\PublicList;
 
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+Route::get('/projects/public', PublicList::class)->name('projects.public');
 
 // ===== DRAFTERS =====
 Route::get('/drafters', Drafters::class)->name('drafters.index');

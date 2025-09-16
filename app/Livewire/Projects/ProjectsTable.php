@@ -44,7 +44,7 @@ final class ProjectsTable extends PowerGridComponent
             'status',           // general
             'phase1Status',     // fase 1
             'fullsetStatus',    // full set
-        ]);
+        ]) ->orderByDesc('id'); // último insert primero
     }
 
     public function relationSearch(): array
@@ -71,6 +71,7 @@ final class ProjectsTable extends PowerGridComponent
             'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
             'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
             'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
+            'deviated'          => 'bg-amber-100 text-amber-800 ring-amber-300',
         ];
         $badge = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
 

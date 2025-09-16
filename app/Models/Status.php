@@ -27,6 +27,7 @@ class Status extends Model
     public const AWAITING_APPROVAL = 'awaiting_approval';
     public const APPROVED          = 'approved';
     public const CANCELLED         = 'cancelled';
+    public const DEVIATED          = 'deviated';           // 👈 NUEVO
 
     /* ========= Relaciones ========= */
     // FK está en projects.general_status
@@ -54,7 +55,7 @@ class Status extends Model
     public function scopeForGeneral($q)
     {
         return $q->whereIn('key', [
-            self::PENDING, self::WORKING, self::AWAITING_APPROVAL, self::APPROVED, self::CANCELLED,
+            self::PENDING, self::WORKING, self::AWAITING_APPROVAL, self::APPROVED, self::CANCELLED, self::DEVIATED, 
         ]);
     }
 

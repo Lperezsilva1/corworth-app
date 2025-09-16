@@ -32,7 +32,7 @@ class Project extends Model
         'fullset_start_date',
         'fullset_end_date',
         // General
-        'general_status',        // FK a statuses.id (manteniendo tu nombre de columna)
+        'general_status',        // FK a statuses.id
         'notes',
         // Front Client
         'seller_door_ok','seller_door_notes',
@@ -56,9 +56,9 @@ class Project extends Model
         'seller_utility_direction_ok' => 'boolean',
         'seller_electrical_ok'        => 'boolean',
         'other_ok'                    => 'boolean',
-        'general_status'              => 'integer', // FK entero
-        'phase1_status_id'            => 'integer', // FK entero
-        'fullset_status_id'           => 'integer', // FK entero
+        'general_status'              => 'integer',
+        'phase1_status_id'            => 'integer',
+        'fullset_status_id'           => 'integer',
         'deleted_at'                  => 'datetime',
     ];
 
@@ -66,7 +66,7 @@ class Project extends Model
     protected static function booted(): void
     {
         static::creating(function (Project $p) {
-            $pendingId = Status::where('key','pending')->value('id');
+            $pendingId = Status::where('key', 'pending')->value('id');
             if (is_null($p->general_status))     $p->general_status     = $pendingId;
             if (is_null($p->phase1_status_id))   $p->phase1_status_id   = $pendingId;
             if (is_null($p->fullset_status_id))  $p->fullset_status_id  = $pendingId;
@@ -104,7 +104,6 @@ class Project extends Model
     /** Status general (FK a statuses.id) */
     public function status(): BelongsTo
     {
-        // Nota: la FK está en projects.general_status
         return $this->belongsTo(Status::class, 'general_status');
     }
 
@@ -122,27 +121,27 @@ class Project extends Model
     /* =====================
        Helpers de duración
        ===================== */
-public function getPhase1DurationAttribute(): ?int
-{
-    $start = $this->phase1_start_date;
-    $end   = $this->phase1_end_date ?? now();
+    public function getPhase1DurationAttribute(): ?int
+    {
+        $start = $this->phase1_start_date;
+        $end   = $this->phase1_end_date ?? now();
 
-    if (! $start) return null;
-    if ($end->lt($start)) [$start, $end] = [$end, $start];
+        if (!$start) return null;
+        if ($end->lt($start)) [$start, $end] = [$end, $start];
 
-    return $start->diffInDays($end) + 1;
-}
+        return $start->diffInDays($end) + 1;
+    }
 
-public function getFullsetDurationAttribute(): ?int
-{
-    $start = $this->fullset_start_date;
-    $end   = $this->fullset_end_date ?? now();
+    public function getFullsetDurationAttribute(): ?int
+    {
+        $start = $this->fullset_start_date;
+        $end   = $this->fullset_end_date ?? now();
 
-    if (! $start) return null;
-    if ($end->lt($start)) [$start, $end] = [$end, $start];
+        if (!$start) return null;
+        if ($end->lt($start)) [$start, $end] = [$end, $start];
 
-    return $start->diffInDays($end) + 1;
-}
+        return $start->diffInDays($end) + 1;
+    }
 
     /* =====================
        Scopes para grids (por estado general)
@@ -185,20 +184,12 @@ public function getFullsetDurationAttribute(): ?int
         return $q->whereHas('status', fn($s) => $s->where('key', $key));
     }
 
-    public function scopePending(Builder $q): Builder
-    {   return $q->withStatusKey('pending'); }
-
-    public function scopeWorking(Builder $q): Builder
-    {   return $q->withStatusKey('working'); }
-
-    public function scopeAwaitingApproval(Builder $q): Builder
-    {   return $q->withStatusKey('awaiting_approval'); }
-
-    public function scopeApproved(Builder $q): Builder
-    {   return $q->withStatusKey('approved'); }
-
-    public function scopeCancelled(Builder $q): Builder
-    {   return $q->withStatusKey('cancelled'); }
+    public function scopePending(Builder $q): Builder        { return $q->withStatusKey('pending'); }
+    public function scopeWorking(Builder $q): Builder        { return $q->withStatusKey('working'); }
+    public function scopeAwaitingApproval(Builder $q): Builder{ return $q->withStatusKey('awaiting_approval'); }
+    public function scopeApproved(Builder $q): Builder       { return $q->withStatusKey('approved'); }
+    public function scopeCancelled(Builder $q): Builder      { return $q->withStatusKey('cancelled'); }
+    public function scopeDeviated(Builder $q): Builder       { return $q->withStatusKey('deviated'); } // extra útil
 
     /* =====================
        Helpers UI (opcionales)
@@ -229,55 +220,83 @@ public function getFullsetDurationAttribute(): ?int
         return $cache[$id] ??= optional(Status::find($id))->key;
     }
 
+    /** Comparar/poner estado general por key (helpers) */
+    public function isGeneral(string $key): bool
+    {
+        return self::statusKeyById($this->general_status) === $key;
+    }
+
+    public function setGeneral(string $key, bool $save = true): bool
+    {
+        $id = self::statusIdByKey($key);
+        if (!$id) return false;
+        $this->general_status = $id;
+        return $save ? (bool) $this->save() : true;
+    }
+
     /* =====================
        Reglas de negocio
        ===================== */
 
     /**
-     * Recalcula el estado general:
-     * - Si Phase1 y FullSet están 'complete' => 'awaiting_approval'
-     * - Si no, pero hay drafter asignado en alguna fase => 'working'
-     * - Si no hay drafters => 'pending'
-     * Notas:
-     * - Si ya está 'approved', no se baja automáticamente.
+     * Recalcula el estado general si NO está en estados terminales del flujo de revisión.
+     * Flujo esperado:
+     * pending -> working -> awaiting_approval -> (approved | deviated -> approved)
      */
-   public function recalcGeneralStatus(bool $save = true): void
-{
-    // No bajar estados finales
-    $currentGeneral = self::statusKeyById($this->general_status);
-    if (in_array($currentGeneral, ['approved','cancelled'], true)) {
-        return;
+    public function recalcGeneralStatus(bool $save = true): void
+    {
+        $currentGeneral = self::statusKeyById($this->general_status);
+
+        // No tocar si está en estados terminales del flujo
+        if (in_array($currentGeneral, ['approved','cancelled','awaiting_approval','deviated'], true)) {
+            return;
+        }
+
+        $p1 = self::statusKeyById($this->phase1_status_id);
+        $fs = self::statusKeyById($this->fullset_status_id);
+        $hasAssignments = (bool) ($this->phase1_drafter_id || $this->fullset_drafter_id);
+
+        $newKey =
+            // ambas fases completas => awaiting_approval
+            ($p1 === 'complete' && $fs === 'complete') ? 'awaiting_approval'
+            // si alguna fase está working O hay drafters asignados => working
+            : (($p1 === 'working' || $fs === 'working' || $hasAssignments) ? 'working'
+            // si no, pending
+            : 'pending');
+
+        $newId = self::statusIdByKey($newKey);
+        if ($newId && $this->general_status !== $newId) {
+            $this->general_status = $newId;
+            if ($save) $this->saveQuietly();
+        }
     }
 
-    $p1 = self::statusKeyById($this->phase1_status_id);
-    $fs = self::statusKeyById($this->fullset_status_id);
-    $hasAssignments = (bool) ($this->phase1_drafter_id || $this->fullset_drafter_id);
-
-    $newKey =
-        // ambas fases completas => awaiting_approval
-        ($p1 === 'complete' && $fs === 'complete') ? 'awaiting_approval'
-        // si alguna fase está en working O hay drafters asignados => working
-        : (($p1 === 'working' || $fs === 'working' || $hasAssignments) ? 'working'
-        // si no, pending
-        : 'pending');
-
-    $newId = self::statusIdByKey($newKey);
-    if ($newId && $this->general_status !== $newId) {
-        $this->general_status = $newId;
-        if ($save) $this->saveQuietly();
-    }
-}
-
-    /** Aprueba si ambas fases están 'complete' */
+    /**
+     * Aprueba si ambas fases están 'complete' y el general está en 'awaiting_approval' o 'deviated'
+     */
     public function approve(): bool
     {
         $phase1Key  = self::statusKeyById($this->phase1_status_id);
         $fullsetKey = self::statusKeyById($this->fullset_status_id);
 
-        if ($phase1Key === 'complete' && $fullsetKey === 'complete') {
-            $this->general_status = self::statusIdByKey('approved');
-            return $this->save();
+        $phasesOk = ($phase1Key === 'complete' && $fullsetKey === 'complete');
+        $generalKey = self::statusKeyById($this->general_status);
+
+        if ($phasesOk && in_array($generalKey, ['awaiting_approval', 'deviated'], true)) {
+            return $this->setGeneral('approved');
         }
         return false;
+    }
+
+    /**
+     * Pasa el proyecto a estado general "deviated" SOLO si está en 'awaiting_approval'
+     * (no toca estados de fase; ya deben estar 'complete' para haber llegado aquí)
+     */
+    public function markAsDeviated(): bool
+    {
+        if (! $this->isGeneral('awaiting_approval')) {
+            return false; // regla del flujo
+        }
+        return $this->setGeneral('deviated');
     }
 }

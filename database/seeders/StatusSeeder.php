@@ -65,6 +65,16 @@ class StatusSeeder extends Seeder
                 'is_active'      => true,
                 'description'    => 'Cancelled by client/team',
             ],
+                  // 👇 Nuevo estado
+            [
+                'key'            => 'deviated',
+                'label'          => 'Deviated',
+                'ui_class'       => 'badge badge-red', // cámbialo al estilo que quieras
+                'display_order'  => 7,
+                'is_final'       => false,
+                'is_active'      => true,
+                'description'    => 'Returned by PFS for revisions',
+            ],
         ];
 
         foreach ($rows as $r) {

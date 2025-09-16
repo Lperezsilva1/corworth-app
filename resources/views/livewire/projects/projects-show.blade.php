@@ -1,5 +1,7 @@
 <div class="p-6" x-data>
   {{-- ===== Floating Toast (auto-hide + dismiss) ===== --}}
+  <div class="p-6" x-data>
+  {{-- ===== Floating Toast SUCCESS ===== --}}
   <div
     x-data="{ show: {{ session()->has('success') ? 'true' : 'false' }}, msg: @js(session('success')) }"
     x-init="if (show) { setTimeout(() => show = false, 3500) }"
@@ -16,6 +18,24 @@
     </div>
   </div>
 
+  {{-- ===== Floating Toast ERROR ===== --}}
+  <div
+    x-data="{ show: {{ session()->has('error') ? 'true' : 'false' }}, msg: @js(session('error')) }"
+    x-init="if (show) { setTimeout(() => show = false, 4000) }"
+    x-show="show"
+    x-transition.opacity
+    class="fixed top-20 left-1/2 -translate-x-1/2 z-50"
+    style="display:none"
+  >
+    <div class="rounded-md border border-red-500/30 bg-red-500/10 text-red-700 px-4 py-2 shadow-lg backdrop-blur">
+      <div class="flex items-center gap-3">
+        <span>⚠️ <span x-text="msg || 'Something went wrong.'"></span></span>
+        <button class="btn btn-xs btn-ghost" @click="show = false">Close</button>
+      </div>
+    </div>
+  </div>
+
+
   {{-- ===== Header ===== --}}
   <x-breadcrumbs :items="[
     ['label' => 'Home', 'url' => url('/')],
@@ -25,8 +45,6 @@
 
   <div class="flex items-center justify-between mb-6">
     <div class="w-full md:w-auto md:pr-6">
-      
-
       {{-- Título con icono de construcción --}}
       <div class="flex items-start gap-3">
         <div class="h-12 w-12 rounded-full bg-primary/10 text-primary ring-1 ring-primary/20 flex items-center justify-center shrink-0">
@@ -118,7 +136,7 @@
 
           <div class="border-t border-base-300"></div>
 
-          {{-- General status (FK → statuses.id) --}}
+          {{-- ===================== General status (FK → statuses.id) ===================== --}}
           <div class="px-4 py-4">
             <div class="text-xs font-semibold text-base-content/60 mb-2">General status</div>
 
@@ -132,17 +150,15 @@
                   'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
                   'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
                   'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                  'deviated'          => 'bg-amber-100 text-amber-800 ring-amber-300', 
                   'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
                   'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
                 ];
                 $badge   = 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm';
                 $tone    = $palette[$key] ?? 'bg-gray-50 text-gray-700 ring-gray-200';
-                $generalKeys    = ['pending','working','awaiting_approval','approved','cancelled'];
-                $generalOptions = collect($statuses)->whereIn('key', $generalKeys);
               @endphp
 
               <div class="flex items-center gap-3">
-                {{-- aquí no hay select: auto-managed --}}
                 @if($label)
                   <span class="{{ $badge }} {{ $tone }}">
                     <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $label }}
@@ -159,6 +175,7 @@
                   'pending'           => 'bg-zinc-50 text-zinc-700 ring-zinc-200',
                   'working'           => 'bg-sky-50 text-sky-700 ring-sky-200',
                   'awaiting_approval' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                  'deviated'          => 'bg-amber-100 text-amber-800 ring-amber-300', 
                   'approved'          => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
                   'cancelled'         => 'bg-rose-50 text-rose-700 ring-rose-200',
                 ];
@@ -167,21 +184,30 @@
               @endphp
 
               @if($project->status)
-                <div class="flex items-center gap-3">
+                <div class="flex items-center flex-wrap gap-3">
                   <span class="{{ $badge }} {{ $tone }}">
                     <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $label }}
                   </span>
 
-                  {{-- ✅ Botón APPROVE solo cuando ambas fases están complete y aún no está final --}}
-                  @if(($project->phase1Status?->key === 'complete')
-                      && ($project->fullsetStatus?->key === 'complete')
-                      && !in_array($project->status?->key, ['approved','cancelled']))
-                    <button class="btn btn-success btn-sm"
-                            wire:click="approveProject"
-                            wire:loading.attr="disabled">
-                      Approve
-                    </button>
-                  @endif
+                  {{-- ↩︎ Deviated: SOLO cuando está en awaiting_approval --}}
+               {{-- ↩︎ Deviated: SOLO cuando está en awaiting_approval --}}
+@if ($project->isGeneral('awaiting_approval'))
+  <button class="btn btn-warning btn-sm"
+          @click="$dispatch('open-deviate-modal')">
+    ↩︎ Deviated
+  </button>
+@endif
+
+{{-- ✅ Approve: awaiting_approval o deviated, y ambas fases en complete --}}
+@php $generalKey = \App\Models\Project::statusKeyById($project->general_status); @endphp
+@if (in_array($generalKey, ['awaiting_approval','deviated'], true)
+     && ($project->phase1Status?->key === 'complete')
+     && ($project->fullsetStatus?->key === 'complete'))
+  <button class="btn btn-success btn-sm"
+          @click="$dispatch('open-approve-modal')">
+    ✅ Approve
+  </button>
+@endif
                 </div>
               @else
                 —
@@ -352,7 +378,74 @@
         </div>
       </div>
     </div>
+{{-- ===================== Modals ===================== --}}
 
+{{-- Modal: Deviated --}}
+<div x-data
+     x-on:open-deviate-modal.window="$refs.deviateDialog.showModal()"
+     class="relative">
+  <dialog x-ref="deviateDialog" class="modal" x-on:keydown.escape="$refs.deviateDialog.close()">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">Move to Deviated</h3>
+      <p class="py-3 text-sm">
+        This will return the project to <span class="font-semibold">Deviated</span> for internal reviews.
+        You can approve later once everything is ready.
+      </p>
+
+      <div class="modal-action">
+        <button class="btn"
+                @click="$refs.deviateDialog.close()">
+          Cancel
+        </button>
+
+        <button class="btn btn-warning"
+                wire:click="markAsDeviated"
+                wire:loading.attr="disabled"
+                wire:target="markAsDeviated"
+                @click="$refs.deviateDialog.close()">
+          Confirm Deviated
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+</div>
+
+{{-- Modal: Approve --}}
+<div x-data
+     x-on:open-approve-modal.window="$refs.approveDialog.showModal()"
+     class="relative">
+  <dialog x-ref="approveDialog" class="modal" x-on:keydown.escape="$refs.approveDialog.close()">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg">Approve project</h3>
+      <p class="py-3 text-sm">
+        This will mark the project as <span class="font-semibold">Approved</span>.
+        Make sure both phases are <em>Complete</em>.
+      </p>
+
+      <div class="modal-action">
+        <button class="btn"
+                @click="$refs.approveDialog.close()">
+          Cancel
+        </button>
+
+        <button class="btn btn-success"
+                wire:click="approveProject"
+                wire:loading.attr="disabled"
+                wire:target="approveProject"
+                @click="$refs.approveDialog.close()">
+          Confirm Approve
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+</div>
+{{-- ===================== /Modals ===================== --}}
     {{-- ===================== TAB: Phase 1 ===================== --}}
     <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Phase 1" />
     <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-5">
