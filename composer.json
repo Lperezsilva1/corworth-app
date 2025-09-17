@@ -15,6 +15,7 @@
         "league/csv": "^9.25",
         "livewire/flux": "^2.2",
         "livewire/volt": "^1.7.0",
+        "openspout/openspout": "^4.28",
         "power-components/livewire-powergrid": "^6.5"
     },
     "require-dev": {

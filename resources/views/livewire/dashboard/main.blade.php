@@ -241,60 +241,69 @@
             <thead class="bg-base-200/70">
               <tr class="text-xs text-base-content/60">
                 <th class="px-6">Name</th>
-                <th>Assigned to</th>
+                <th class="w-40">Seller</th>
                 <th class="w-32">Updated</th>
                 <th class="w-40">Status</th>
               </tr>
             </thead>
-            <tbody class="[&>tr]:border-t [&>tr]:border-base-300 [&>tr]:even:bg-base-100/50">
-              @forelse($pendingProjects as $p)
-                @php
-                  $p1 = $p['p1_drafter'] ?? null;
-                  $fs = $p['fs_drafter'] ?? null;
-                  $avatar = function($txt){
-                    $ch = strtoupper(mb_substr((string)$txt,0,1));
-                    return '<div class="avatar placeholder"><div class="bg-base-300 text-base-content/80 w-8 rounded-full text-[11px] flex items-center justify-center">'.$ch.'</div></div>';
-                  };
-                @endphp
-                <tr class="align-middle hover:bg-base-100/70">
-                  <td class="px-6">
-                    @if (Route::has('projects.show'))
-                      <a href="{{ route('projects.show', $p['id']) }}" class="link link-hover font-medium">
-                        {{ $p['name'] ?? '—' }}
-                      </a>
-                    @else
-                      <span class="font-medium">{{ $p['name'] ?? '—' }}</span>
-                    @endif
-                    <div class="text-xs text-base-content/60">{{ $p['building'] ?? '—' }}</div>
-                  </td>
+          <tbody class="[&>tr]:border-t [&>tr]:border-base-300 [&>tr]:even:bg-base-100/50">
+  @forelse($pendingProjects as $p)
+    <tr class="align-middle hover:bg-base-100/70">
+      {{-- Name + Building --}}
+      <td class="px-6">
+        @if (Route::has('projects.show'))
+          <a href="{{ route('projects.show', $p['id']) }}" class="link link-hover font-medium">
+            {{ $p['name'] ?? '—' }}
+          </a>
+        @else
+          <span class="font-medium">{{ $p['name'] ?? '—' }}</span>
+        @endif
+        <div class="text-xs text-base-content/60">{{ $p['building'] ?? '—' }}</div>
+      </td>
 
-                  <td>
-                    <div class="flex items-center gap-3">
-                      {!! $p1 ? $avatar($p1) : '' !!}
-                      {!! $fs ? $avatar($fs) : '' !!}
-                      @if($p1 || $fs)
-                        <div class="text-xs text-base-content/70">
-                          <span class="mr-2">{{ $p1 ?? '—' }}</span>
-                          @if($fs)<span class="opacity-60">•</span> <span class="ml-2">{{ $fs }}</span>@endif
-                        </div>
-                      @else
-                        <span class="text-xs text-base-content/60">—</span>
-                      @endif
-                    </div>
-                  </td>
+      {{-- Seller (texto simple) --}}
+      <td class="text-sm text-base-content/70 whitespace-nowrap">
+        @php
+          $sellerName = $p['seller'] ?? $p['seller_name'] ?? null;
+          $sellerId   = $p['seller_id'] ?? null;
+        @endphp
 
-                  <td class="text-sm text-base-content/70 whitespace-nowrap">{{ $p['updated'] ?? '—' }}</td>
+        @if($sellerName)
+          @if (Route::has('sellers.show') && $sellerId)
+            <a href="{{ route('sellers.show', $sellerId) }}" class="link link-hover">
+              {{ $sellerName }}
+            </a>
+          @else
+            {{ $sellerName }}
+          @endif
+        @else
+          <span class="text-xs text-base-content/60">—</span>
+        @endif
+      </td>
 
-                  <td>
-                    <x-status-pill :key="($p['gen_key'] ?? null)" :label="($p['gen_label'] ?? null)" />
-                  </td>
-                </tr>
-              @empty
-                <tr>
-                  <td colspan="4" class="py-10 text-center text-base-content/60">No tasks to show.</td>
-                </tr>
-              @endforelse
-            </tbody>
+      {{-- Updated --}}
+      <td class="text-sm text-base-content/70 whitespace-nowrap">
+        {{ $p['updated'] ?? '—' }}
+      </td>
+
+      {{-- Status --}}
+      <td class="whitespace-nowrap pr-6">
+        <x-status-pill
+          :key="Str::of($p['gen_key'] ?? 'default')->lower()"
+          :label="($p['gen_label'] ?? '—')"
+          size="xs"
+          variant="outline"
+          :dot="true"
+        />
+      </td>
+    </tr>
+  @empty
+    <tr>
+      <td colspan="4" class="py-10 text-center text-base-content/60">No tasks to show.</td>
+    </tr>
+  @endforelse
+</tbody>
+
           </table>
         </div>
       </div>

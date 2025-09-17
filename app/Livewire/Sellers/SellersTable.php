@@ -28,6 +28,8 @@ final class SellersTable extends PowerGridComponent
     public function datasource(): Builder
     {
         return Seller::query();
+        // Si usas SoftDeletes:
+        // return Seller::query()->whereNull('deleted_at');
     }
 
     public function relationSearch(): array
@@ -42,20 +44,25 @@ final class SellersTable extends PowerGridComponent
             ->add('name_seller')
             ->add('email')
             ->add('description_seller')
-            // Etiqueta legible para el estado (sin HTML)
-            ->add('status_text', fn ($s) => $s->status 
-                     ? '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Enabled</span>'
-                     : '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Disabled</span>')
-            // Fecha formateada para mostrar
+
+            // 👇 Campo visual (HTML) para el badge
+            ->add('status_text', fn ($s) => $s->status
+                ? '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Enabled</span>'
+                : '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Disabled</span>')
+
+            // 👇 Campos REALES de BD para ordenar/buscar correctamente
+            ->add('status')
+            ->add('created_at')
+
+            // 👇 Campo formateado solo para mostrar
             ->add('created_at_formatted', fn ($s) => optional($s->created_at)->format('Y-m-d H:i'));
     }
 
     public function columns(): array
     {
         return [
-            // Índice de fila (numera 1,2,3… con paginación)
             Column::make('#', 'id')
-                ->index()                      // ← índice de fila
+                ->index()
                 ->bodyAttribute('text-center'),
 
             Column::make('Name', 'name_seller')
@@ -66,13 +73,15 @@ final class SellersTable extends PowerGridComponent
                 ->sortable()
                 ->searchable(),
 
-             // Columna Status (booleano)
-            Column::make('Status', 'status_text')
-                    ->sortable()
-                    ->searchable()
-                    ->bodyAttribute('text-center'),
+            // 👇 Mostramos HTML (status_text) pero ordenamos/buscamos por 'status'
+            Column::make('Status', 'status_text', 'status')
+                ->sortable()
+                ->searchable()
+                ->bodyAttribute('text-center')
+                ->visibleInExport(false), // evita HTML en exportación (opcional)
 
-            Column::make('Created At', 'created_at_formatted')
+            // 👇 Mostramos formateado, pero ordenamos por 'created_at'
+            Column::make('Created At', 'created_at_formatted', 'created_at')
                 ->sortable(),
 
             Column::action('Action'),
@@ -81,11 +90,7 @@ final class SellersTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [
-            // Ejemplos si luego quieres activar:
-            // Filter::boolean('status', 'status'),
-            // Filter::inputText('name_seller')->operators(['contains']),
-        ];
+        return []; // Sin filtros (tu versión no trae Filter)
     }
 
     public function actions(Seller $row): array

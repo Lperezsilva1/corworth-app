@@ -40,16 +40,21 @@ final class BuildingsTable extends PowerGridComponent
             ->add('id')
             ->add('name_building')
             ->add('description_building')
+            // Campo visual (HTML)
             ->add('status_text', fn ($building) => $building->status
                 ? '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Enabled</span>'
                 : '<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Disabled</span>')
+            // Campo real de BD
+            ->add('status')
             ->add('created_at');
     }
 
     public function columns(): array
     {
         return [
-            Column::make('#', 'id')->index()->bodyAttribute('text-center'),
+            Column::make('#', 'id')
+                ->index()
+                ->bodyAttribute('text-center'),
 
             Column::make('Name', 'name_building')
                 ->sortable()
@@ -59,9 +64,9 @@ final class BuildingsTable extends PowerGridComponent
                 ->sortable()
                 ->searchable(),
 
-            Column::make('Status', 'status_text')
+            // 👇 mostramos HTML pero ordenamos por el campo real 'status'
+            Column::make('Status', 'status_text', 'status')
                 ->sortable()
-                ->searchable()
                 ->bodyAttribute('text-center'),
 
             Column::make('Created At', 'created_at')
@@ -73,7 +78,7 @@ final class BuildingsTable extends PowerGridComponent
 
     public function filters(): array
     {
-        return [];
+        return []; // Nada de filtros en tu versión
     }
 
     #[\Livewire\Attributes\On('edit')]
@@ -98,14 +103,4 @@ final class BuildingsTable extends PowerGridComponent
                 ->dispatch('delete-building', ['buildingId' => $row->id]),
         ];
     }
-
-    /*
-    public function actionRules($row): array
-    {
-        return [
-            // Ejemplo: ocultar 'edit' para ID 1
-            // Rule::button('edit')->when(fn($row) => $row->id === 1)->hide(),
-        ];
-    }
-    */
 }

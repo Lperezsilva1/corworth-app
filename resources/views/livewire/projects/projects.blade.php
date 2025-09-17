@@ -40,58 +40,99 @@
 
     {{-- ===== STATS DINÁMICOS ===== --}}
     <div class="stats shadow" wire:poll.30s>
-      <!-- Total -->
-      <div class="stat">
-        <div class="stat-figure text-secondary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-8 w-8 stroke-current" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div class="stat-title">Total Projects</div>
-        <div class="stat-value">{{ number_format($this->stats['total'] ?? 0) }}</div>
-        <div class="stat-desc">All projects</div>
-      </div>
-
-      <!-- Pending -->
-      <div class="stat">
-        <div class="stat-figure text-secondary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-8 w-8 stroke-current" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 8v4l3 3M12 6a9 9 0 100 18 9 9 0 000-18z" />
-          </svg>
-        </div>
-        <div class="stat-title">Pending</div>
-        <div class="stat-value">{{ number_format($this->stats['pending'] ?? 0) }}</div>
-        <div class="stat-desc">Not started</div>
-      </div>
-
-      <!-- Working -->
-      <div class="stat">
-        <div class="stat-figure text-secondary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-8 w-8 stroke-current" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 7h18M6 10h12M9 13h6M7 17h10" />
-          </svg>
-        </div>
-        <div class="stat-title">Working</div>
-        <div class="stat-value">{{ number_format($this->stats['working'] ?? 0) }}</div>
-        <div class="stat-desc">In progress</div>
-      </div>
-
-      <!-- Approved -->
-      <div class="stat">
-        <div class="stat-figure text-secondary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-8 w-8 stroke-current" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <div class="stat-title">Approved</div>
-        <div class="stat-value">{{ number_format($this->stats['approved'] ?? 0) }}</div>
-        <div class="stat-desc">Final state</div>
-      </div>
+  <!-- Total -->
+  <div class="stat">
+    <div class="stat-figure text-secondary">
+      <!-- Icono: Portafolio / proyectos -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-8 w-8 stroke-current" fill="none"
+           viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 7h18M3 7a2 2 0 012-2h14a2 2 0 012 2M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7" />
+      </svg>
     </div>
+    <div class="stat-title">Total Projects</div>
+    <div class="stat-value">{{ number_format($this->stats['total'] ?? 0) }}</div>
+    <div class="stat-desc">All projects</div>
+  </div>
+<!-- Approved -->
+  <div class="stat">
+    <div class="stat-figure text-secondary">
+      <!-- Icono: Check grande -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-8 w-8 stroke-current" fill="none"
+           viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <div class="stat-title">Approved</div>
+    <div class="stat-value">{{ number_format($this->stats['approved'] ?? 0) }}</div>
+    <div class="stat-desc">Final state</div>
+  </div>
+  <!-- Pending -->
+  <div class="stat">
+    <div class="stat-figure text-secondary">
+      <!-- Icono: Reloj -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-8 w-8 stroke-current" fill="none"
+           viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 6v6l4 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div class="stat-title">Pending</div>
+    <div class="stat-value">{{ number_format($this->stats['pending'] ?? 0) }}</div>
+    <div class="stat-desc">Not started</div>
+  </div>
+
+  <!-- Working -->
+  <div class="stat">
+    <div class="stat-figure text-secondary">
+      <!-- Icono: Engranaje -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-8 w-8 stroke-current" fill="none"
+           viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.75 3a1.5 1.5 0 013 0v1.5a1.5 1.5 0 003 0V3a6 6 0 11-6 0zM4.5 12a7.5 7.5 0 1115 0 7.5 7.5 0 01-15 0z" />
+      </svg>
+    </div>
+    <div class="stat-title">Working</div>
+    <div class="stat-value">{{ number_format($this->stats['working'] ?? 0) }}</div>
+    <div class="stat-desc">In progress</div>
+  </div>
+
+  <!-- Waiting PFS approval -->
+  <div class="stat">
+    <div class="stat-figure text-secondary">
+      <!-- Icono: Documento con check -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-8 w-8 stroke-current" fill="none"
+           viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <div class="stat-title">Waiting PFS approval</div>
+    <div class="stat-value">{{ number_format($this->stats['awaiting_approval'] ?? 0) }}</div>
+    <div class="stat-desc">Review stage</div>
+  </div>
+
+  <!-- Deviated -->
+  <div class="stat">
+    <div class="stat-figure text-secondary">
+      <!-- Icono: Triángulo de advertencia -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-8 w-8 stroke-current" fill="none"
+           viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v4m0 4h.01" />
+      </svg>
+    </div>
+    <div class="stat-title">Deviated</div>
+    <div class="stat-value">{{ number_format($this->stats['deviated'] ?? 0) }}</div>
+    <div class="stat-desc">Issues detected</div>
+  </div>
+
+  
+</div>
+
     {{-- ===== /STATS DINÁMICOS ===== --}}
     <flux:separator variant="subtle" />
     {{-- Tabla (PowerGrid/Livewire) --}}

@@ -112,6 +112,7 @@ class Projects extends Component
             'awaiting_approval' => \App\Models\Project::awaitingApproval()->count(),
             'approved'          => \App\Models\Project::approved()->count(),
             'cancelled'         => \App\Models\Project::cancelled()->count(),
+            'deviated'         => \App\Models\Project::deviated()->count(),
         ];
     }
 
