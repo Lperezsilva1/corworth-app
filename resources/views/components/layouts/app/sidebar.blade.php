@@ -28,6 +28,7 @@
     <flux:navlist.item :href="route('drafters.index')" :current="request()->routeIs('drafters.index')" wire:navigate>Drafters</flux:navlist.item>
     <flux:navlist.item :href="route('sellers.index')" :current="request()->routeIs('sellers.index')" wire:navigate>Sellers</flux:navlist.item>
     <flux:navlist.item :href="route('buildings.index')" :current="request()->routeIs('buildings.index')" wire:navigate>Models</flux:navlist.item>
+     
 </flux:navlist.group>
 
             </flux:navlist>
@@ -35,9 +36,11 @@
             <flux:spacer />
 
             <flux:navlist variant="outline">
-                <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                {{ __('Repository') }}
+                <flux:navlist.item icon="folder-git-2" :href="route('activity.index')" :current="request()->routeIs('activity.index')"  wire:navigate>
+                {{ __('Activity') }}
                 </flux:navlist.item>
+            
+                
 
                 <flux:navlist.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
                 {{ __('Documentation') }}
@@ -77,6 +80,17 @@
 
                     <flux:menu.radio.group>
                         <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                        <x-nav.item
+  :href="route('admin.users.index')"
+  role="Admin"
+  :label="'User Management'"
+  :icon="<<<'SVG'
+    <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' class='h-4 w-4' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>
+      <path d='M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/>
+      <circle cx='12' cy='7' r='4'/>
+    </svg>
+  SVG"
+/>
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />
@@ -128,6 +142,8 @@
 
                     <flux:menu.radio.group>
                         <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                         
+                          <flux:menu.item :href="route('admin.users.index')" icon="cog" wire:navigate>{{ __('Admin → Users') }}</flux:menu.item>
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />

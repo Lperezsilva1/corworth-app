@@ -2,30 +2,34 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'admin',
-            'email' => 'admin@corworth.com',
-            'password' => 'Corworth123*',
+        // 1) Primero roles/permisos y demás catálogos
+        $this->call([
+            RolesAndPermissionsSeeder::class,
+            StatusSeeder::class,
         ]);
 
-          $this->call([
-        StatusSeeder::class,
-        //ProjectsDemoSeeder::class, // ← crea Buildings/Sellers/Drafters/Projects    
-    ]); 
+        // 2) Crear/actualizar usuario admin (SIN .env)
+        $adminEmail    = 'admin@corworth.com';
+        $adminName     = 'Admin';
+        $adminPassword = 'admin@corworth.com'; // cámbialo si quieres
 
-        
+        $admin = User::updateOrCreate(
+            ['email' => $adminEmail],
+            [
+                'name'     => $adminName,
+                'password' => Hash::make($adminPassword),
+            ]
+        );
+
+        // 3) Asignar rol admin (que ya existe por el seeder anterior)
+        $admin->syncRoles(['admin']);
     }
 }

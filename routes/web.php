@@ -1,8 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;                 // 👈 para servir archivos
+use Illuminate\Support\Facades\Storage;
 use Livewire\Volt\Volt;
+
 use App\Livewire\Salesperson;
 use App\Livewire\Drafters\Drafters;
 use App\Livewire\Drafters\DraftersFormulario;
@@ -10,17 +11,18 @@ use App\Livewire\Sellers\Sellers;
 use App\Livewire\Sellers\SellersFormulario;
 use App\Livewire\Buildings\Buildings;
 use App\Livewire\Buildings\BuildingFormulario;
-use App\Livewire\Projects\Projects;           // índice + modal
-use App\Livewire\Projects\ProjectFormulario;  // página de creación
-use App\Livewire\Projects\ProjectsShow;       // detalle
+use App\Livewire\Projects\Projects;
+use App\Livewire\Projects\ProjectFormulario;
+use App\Livewire\Projects\ProjectsShow;
 use App\Livewire\Dashboard\Main as DashboardMain;
-use App\Models\ProjectCommentAttachment;       // 👈 modelo de adjuntos
+use App\Models\ProjectCommentAttachment;
 use App\Livewire\Activity\Index as ActivityIndex;
 use App\Livewire\Projects\PublicList;
+use App\Livewire\Admin\Users\Home  as UsersHome;
+use App\Livewire\Admin\Users\Index as UsersIndex;
+use App\Livewire\Admin\Users\UsersFormulario;
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', fn () => view('welcome'))->name('home');
 
 Route::get('/projects/public', PublicList::class)->name('projects.public');
 
@@ -39,15 +41,12 @@ Route::get('/buildings/create', BuildingFormulario::class)->name('buildings.crea
 // ===== PROJECTS =====
 Route::get('/projects', Projects::class)->name('projects.index');
 Route::get('/projects/create', ProjectFormulario::class)->name('projects.create');
-Route::get('/projects/{project}', ProjectsShow::class)->name('projects.show');
-Route::get('/projects/{project}/edit', ProjectFormulario::class)->name('projects.edit');
+Route::get('/projects/{project}', ProjectsShow::class)->whereNumber('project')->name('projects.show');
+Route::get('/projects/{project}/edit', ProjectFormulario::class)->whereNumber('project')->name('projects.edit');
 
 // ===== DASHBOARD =====
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardMain::class)->name('dashboard');
-});
-
-Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/activity', ActivityIndex::class)->name('activity.index');
 });
 
@@ -59,7 +58,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 
-    // === Adjuntos de comentarios (ver/descargar SIN storage:link) ===
+    // Adjuntos (ver/descargar sin storage:link)
     Route::get('/attachments/{att}/view', function (ProjectCommentAttachment $att) {
         $stream = Storage::disk($att->disk)->readStream($att->path);
         abort_unless($stream, 404);
@@ -75,12 +74,25 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/attachments/{att}/download', function (ProjectCommentAttachment $att) {
         abort_unless(Storage::disk($att->disk)->exists($att->path), 404);
-
-        return Storage::disk($att->disk)->download(
-            $att->path,
-            $att->original_name
-        );
+        return Storage::disk($att->disk)->download($att->path, $att->original_name);
     })->name('attachments.download');
 });
+
+// ===== ADMIN =====
+Route::middleware(['auth','verified','role:Admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::redirect('/', '/admin/users')->name('home'); // 👈 atajo
+        Route::get('/ping', fn() => 'OK')->name('ping'); // <— SOLO prueba
+        Route::get('/users/create', UsersFormulario::class)->name('users.create');
+        Route::get('/users/{userId}/edit', UsersFormulario::class)->name('users.edit'); // ← usa {userId}
+        
+        
+        // Página que envuelve la tabla (wrapper)
+        Route::get('/users', UsersHome::class)->name('users.index');
+         // Crear y Editar usando el mismo componente de formulario
+       
+    });
 
 require __DIR__.'/auth.php';

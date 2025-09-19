@@ -53,14 +53,14 @@ class BuildingFormulario extends Component
                 'description_building' => $this->description_building,
                 'status'               => $this->status,
             ]);
-            session()->flash('success', 'Building updated successfully.');
+         
         } else {
             Building::create([
                 'name_building'        => $this->name_building,
                 'description_building' => $this->description_building,
                 'status'               => $this->status,
             ]);
-            session()->flash('success', 'Building created successfully.');
+            
             $this->dispatch('notify', 'Building created successfully');
             $this->reset(['name_building', 'description_building', 'status']);
         }
