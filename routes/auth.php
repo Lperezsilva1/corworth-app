@@ -12,7 +12,7 @@ Route::middleware('guest')->group(function () {
 
 // SOLO Admin puede acceder al formulario de registro
 Route::middleware(['auth','role:Admin'])->group(function () {
-    Volt::route('register', 'auth.register')->name('register');
+   
 });
 
 Route::middleware('auth')->group(function () {
@@ -24,5 +24,5 @@ Route::middleware('auth')->group(function () {
 
     Volt::route('confirm-password', 'auth.confirm-password')->name('password.confirm');
 });
-
+Volt::route('register', 'auth.register')->name('register');
 Route::post('logout', App\Livewire\Actions\Logout::class)->name('logout');
