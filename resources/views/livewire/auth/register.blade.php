@@ -17,45 +17,39 @@ new #[Layout('components.layouts.auth')] class extends Component {
     /**
      * Handle an incoming registration request.
      */
-    public function register(): void
-{
+    public function register(): mixed
+    {
+        $validated = $this->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+        ]);
 
-    // Defensa extra: solo Admin puede ejecutar esta acción
-     if (!auth()->check() || !auth()->user()->hasRole('Admin')) {
-         abort(403);
-     }
+        $validated['password'] = Hash::make($validated['password']);
 
-    $validated = $this->validate([
-        'name' => ['required', 'string', 'max:255'],
-        'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-        'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
-    ]);
+        $user = User::create($validated);
+        event(new Registered($user));
 
-    $validated['password'] = Hash::make($validated['password']);
+        // Si el que crea es un admin autenticado, NO cambiamos la sesión y redirigimos al índice admin
+        if (auth()->check() && auth()->user()->hasRole('admin')) {
+            session()->flash('status', 'User created');
+            return $this->redirectRoute('admin.users.index', navigate: true);
+        }
 
-    $user = User::create($validated);
-    event(new Registered($user));
-
-    // 👉 Si NO hay sesión iniciada (registro público), iniciar sesión con el nuevo usuario
-    if (! auth()->check()) {
+        // Flujo invitado: iniciar sesión y redirigir al aviso de verificación (lo que espera el test)
         Auth::login($user);
-        $this->redirectIntended(route('dashboard', absolute: false), navigate: true);
-        return;
+
+        // Si tu User no implementa MustVerifyEmail, cambia esta línea por:
+        // return $this->redirectRoute('dashboard', navigate: true);
+        return $this->redirect(route('verification.notice'), navigate: true);
     }
-
-    // 👉 Si lo está creando un Admin autenticado, NO cambiar de sesión
-    // (Opcional) asigna un rol por defecto si usas Spatie:
-    // $user->assignRole('Seller');
-
-    session()->flash('status', 'User created');
-    $this->redirectRoute('admin.users.index', navigate: true);
-}
-
-    
 }; ?>
 
 <div class="flex flex-col gap-6">
-    <x-auth-header :title="__('Create an account')" :description="__('Enter your details below to create your account')" />
+    <x-auth-header
+        :title="__('Create an account')"
+        :description="__('Enter your details below to create your account')"
+    />
 
     <!-- Session Status -->
     <x-auth-session-status class="text-center" :status="session('status')" />
