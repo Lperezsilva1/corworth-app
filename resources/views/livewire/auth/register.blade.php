@@ -17,32 +17,29 @@ new #[Layout('components.layouts.auth')] class extends Component {
     /**
      * Handle an incoming registration request.
      */
-    public function register(): mixed
-    {
-        $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
-        ]);
+   public function register(): mixed
+{
+    $validated = $this->validate([
+        'name' => ['required','string','max:255'],
+        'email' => ['required','string','lowercase','email','max:255','unique:' . \App\Models\User::class],
+        'password' => ['required','string','confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+    ]);
 
-        $validated['password'] = Hash::make($validated['password']);
+    $validated['password'] = \Illuminate\Support\Facades\Hash::make($validated['password']);
 
-        $user = User::create($validated);
-        event(new Registered($user));
+    $user = \App\Models\User::create($validated);
+    event(new \Illuminate\Auth\Events\Registered($user));
 
-        // Si el que crea es un admin autenticado, NO cambiamos la sesión y redirigimos al índice admin
-        if (auth()->check() && auth()->user()->hasRole('admin')) {
-            session()->flash('status', 'User created');
-            return $this->redirectRoute('admin.users.index', navigate: true);
-        }
-
-        // Flujo invitado: iniciar sesión y redirigir al aviso de verificación (lo que espera el test)
-        Auth::login($user);
-
-        // Si tu User no implementa MustVerifyEmail, cambia esta línea por:
-        // return $this->redirectRoute('dashboard', navigate: true);
-        return $this->redirect(route('verification.notice'), navigate: true);
+    // Admin autenticado: no cambiar sesión y redirigir al índice admin
+    if (auth()->check() && auth()->user()->hasRole('admin')) {
+        session()->flash('status', 'User created');
+        return $this->redirectRoute('admin.users.index', navigate: true);
     }
+
+    // Invitado: iniciar sesión y redirigir a dashboard (según el test)
+    \Illuminate\Support\Facades\Auth::login($user);
+    return $this->redirectRoute('dashboard', navigate: true);
+}
 }; ?>
 
 <div class="flex flex-col gap-6">
