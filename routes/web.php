@@ -77,9 +77,15 @@ Route::middleware(['auth'])->group(function () {
         return Storage::disk($att->disk)->download($att->path, $att->original_name);
     })->name('attachments.download');
 });
-
+Route::middleware('auth')->get('/whoami', function () {
+    return [
+        'user'      => auth()->user()->only('id','email'),
+        'roles'     => auth()->user()->getRoleNames(),   // ← lo que Spatie ve
+        'verified'  => (bool) auth()->user()->hasVerifiedEmail(),
+    ];
+});
 // ===== ADMIN =====
-Route::middleware(['auth','verified','role:admin']) // <-- rol en minúsculas
+Route::middleware(['auth','verified','role:Admin']) // <-- rol en minúsculas
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
