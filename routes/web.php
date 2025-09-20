@@ -79,20 +79,19 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ===== ADMIN =====
-Route::middleware(['auth','verified','role:Admin'])
+Route::middleware(['auth','verified','role:admin']) // <-- rol en minúsculas
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::redirect('/', '/admin/users')->name('home'); // 👈 atajo
-        Route::get('/ping', fn() => 'OK')->name('ping'); // <— SOLO prueba
+        Route::redirect('/', '/admin/users')->name('home');
+        Route::get('/ping', fn() => 'OK')->name('ping');
+
+        // Crear y editar con el mismo componente
         Route::get('/users/create', UsersFormulario::class)->name('users.create');
-        Route::get('/users/{userId}/edit', UsersFormulario::class)->name('users.edit'); // ← usa {userId}
-        
-        
+        Route::get('/users/{userId}/edit', UsersFormulario::class)->name('users.edit');
+
         // Página que envuelve la tabla (wrapper)
         Route::get('/users', UsersHome::class)->name('users.index');
-         // Crear y Editar usando el mismo componente de formulario
-       
     });
 
 require __DIR__.'/auth.php';
