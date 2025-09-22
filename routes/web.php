@@ -21,6 +21,7 @@ use App\Livewire\Projects\PublicList;
 use App\Livewire\Admin\Users\Home  as UsersHome;
 use App\Livewire\Admin\Users\Index as UsersIndex;
 use App\Livewire\Admin\Users\UsersFormulario;
+use App\Livewire\GlobalSearch;
 
 Route::get('/', fn () => view('welcome'))->name('home');
 
@@ -37,6 +38,9 @@ Route::get('/sellers/create', SellersFormulario::class)->name('sellers.create');
 // ===== BUILDINGS =====
 Route::get('/buildings', Buildings::class)->name('buildings.index');
 Route::get('/buildings/create', BuildingFormulario::class)->name('buildings.create');
+
+
+
 
 // ===== PROJECTS =====
 Route::get('/projects', Projects::class)->name('projects.index');
