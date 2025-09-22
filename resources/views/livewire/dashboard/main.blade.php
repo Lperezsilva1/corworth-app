@@ -98,14 +98,7 @@
               </div>
 
               @if($delta !== '')
-                <div
-                  class="mt-2 inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border {{ $deltaClass }} opacity-0 translate-y-1"
-                  x-intersect="$el.classList.remove('opacity-0','translate-y-1')"
-                  style="transition: all .4s ease;"
-                >
-                  {!! $deltaIcon !!}
-                  <span class="font-medium">{{ $delta }}</span>
-                </div>
+               
               @endif
             </div>
           </div>

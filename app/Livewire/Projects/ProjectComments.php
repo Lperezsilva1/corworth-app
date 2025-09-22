@@ -7,6 +7,7 @@ use Livewire\Component;
 use App\Models\{Project, ProjectComment,ProjectCommentAttachment};
 use Illuminate\Support\Facades\Auth;
 use Livewire\WithFileUploads;
+use App\Notifications\CommentAddedNotification;
 
 class ProjectComments extends Component
 {
@@ -38,39 +39,55 @@ class ProjectComments extends Component
     }
 
     public function addComment(): void
-    {
-        $this->validate();
+{
+    $this->validate();
 
-        $comment = ProjectComment::create([
-            'project_id' => $this->projectId,
-            'user_id'    => Auth::id(),
-            'title'      => trim($this->commentTitle),
-            'body'       => $this->commentBody && trim($this->commentBody) !== '' ? trim($this->commentBody) : null,
-            'is_system'  => false,
-            'source'     => 'UI',
+    $comment = ProjectComment::create([
+        'project_id' => $this->projectId,
+        'user_id'    => Auth::id(),
+        'title'      => trim($this->commentTitle),
+        'body'       => $this->commentBody && trim($this->commentBody) !== '' ? trim($this->commentBody) : null,
+        'is_system'  => false,
+        'source'     => 'UI',
+    ]);
+
+    // Guardar adjuntos (si hay)
+    foreach ($this->uploads as $file) {
+        $path = $file->store("comments/{$comment->id}", 'public');
+
+        ProjectCommentAttachment::create([
+            'project_comment_id' => $comment->id,
+            'user_id'            => Auth::id(),
+            'original_name'      => $file->getClientOriginalName(),
+            'disk'               => 'public',
+            'path'               => $path,
+            'size'               => $file->getSize(),
+            'mime'               => $file->getMimeType(),
         ]);
-
-        // Guardar adjuntos (si hay)
-        foreach ($this->uploads as $file) {
-            $path = $file->store("comments/{$comment->id}", 'public');
-
-            ProjectCommentAttachment::create([
-                'project_comment_id' => $comment->id,
-                'user_id'            => Auth::id(),
-                'original_name'      => $file->getClientOriginalName(),
-                'disk'               => 'public',
-                'path'               => $path,
-                'size'               => $file->getSize(),
-                'mime'               => $file->getMimeType(),
-            ]);
-        }
-
-        // Reset + feedback + scroll
-        $this->reset(['commentTitle','commentBody','uploads']);
-        $this->composerOpen = false;  
-        $this->dispatch('comment-added');
-        session()->flash('comment_ok', 'Comment added.');
     }
+
+    /** 🔔 Notificaciones: todos menos el autor */
+    $recipients = \App\Models\User::whereKeyNot(Auth::id())->get();
+    $project    = \App\Models\Project::find($this->projectId);
+
+    foreach ($recipients as $user) {
+        $user->notify(new \App\Notifications\CommentAddedNotification(
+            projectId:    $this->projectId,
+            projectName:  $project?->project_name ?? 'Project',
+            commentTitle: $comment->title ?? '',
+            commentBody:  $comment->body ?? null,
+            commentId:    $comment->id,
+            actorId:      Auth::id(),
+            actorName:    Auth::user()?->name
+        ));
+    }
+
+    // Reset + feedback + scroll
+    $this->reset(['commentTitle','commentBody','uploads']);
+    $this->composerOpen = false;
+    $this->dispatch('comment-added');
+    session()->flash('comment_ok', 'Comment added.');
+}
 
     public function deleteComment(int $id): void
     {
