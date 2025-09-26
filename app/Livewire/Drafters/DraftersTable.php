@@ -11,6 +11,8 @@ use PowerComponents\LivewirePowerGrid\PowerGridFields;
 use PowerComponents\LivewirePowerGrid\PowerGridComponent;
 use PowerComponents\LivewirePowerGrid\Components\SetUp\Exportable;
 use PowerComponents\LivewirePowerGrid\Traits\WithExport;
+use PowerComponents\LivewirePowerGrid\Themes\Tailwind;
+
 
 final class DraftersTable extends PowerGridComponent
 {
@@ -18,11 +20,13 @@ final class DraftersTable extends PowerGridComponent
 
     public string $tableName = 'drafters-table-oxhn9b-table';
 
+
     public function setUp(): array
     {
         $this->showCheckBox();
 
         return [
+            
             // Export (XLS/CSV) sin HTML:
             PowerGrid::exportable('export')
                 ->striped()

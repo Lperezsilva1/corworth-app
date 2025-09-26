@@ -6,6 +6,7 @@
         ['label' => 'Home', 'url' => url('/dashboard')],
         ['label' => 'Projects']
       ]" />
+      
 
       <!-- Contenedor título + botón (con icono) -->
       <div class="flex items-center justify-between">

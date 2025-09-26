@@ -22,9 +22,13 @@
 
     <flux:separator variant="subtle" />
 
-    {{-- Tabla (PowerGrid/Livewire) --}}
-    <livewire:drafters.drafters-table />
 
+
+    {{-- Tabla (PowerGrid/Livewire) --}}
+
+   <div class="-mx-4 sm:mx-0">
+  <livewire:drafters.drafters-table />
+</div>
 
 {{-- Modal DaisyUI --}}
     @if($this->modalOpen)

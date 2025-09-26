@@ -22,6 +22,7 @@ use App\Livewire\Admin\Users\Home  as UsersHome;
 use App\Livewire\Admin\Users\Index as UsersIndex;
 use App\Livewire\Admin\Users\UsersFormulario;
 use App\Livewire\GlobalSearch;
+use App\Livewire\Drafters\DraftersFilamentTable;
 
 Route::get('/', fn () => view('welcome'))->name('home');
 

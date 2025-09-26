@@ -1,52 +1,61 @@
-<form wire:submit.prevent="save" class="space-y-5">
-        {{-- Name --}}
-        <div>
-          <label class="block text-sm font-medium mb-1">Name</label>
-          <input
-            type="text"
-            class="input input-bordered w-full bg-transparent focus:bg-transparent"
-            wire:model.defer="name_drafter"
-            placeholder="Drafter name"
-          >
-          @error('name_drafter')
-            <p class="text-error text-sm mt-1">{{ $message }}</p>
-          @enderror
-        </div>
+<form wire:submit.prevent="save" class="space-y-6">
 
-        {{-- Description --}}
-        <div>
-          <label class="block text-sm font-medium mb-1">Description</label>
-          <textarea
-            class="textarea textarea-bordered w-full bg-transparent focus:bg-transparent"
-            rows="3"
-            wire:model.defer="description_drafter"
-            placeholder="Optional description"
-          ></textarea>
-          @error('description_drafter')
-            <p class="text-error text-sm mt-1">{{ $message }}</p>
-          @enderror
-        </div>
+  {{-- Name --}}
+  <flux:field>
+    <flux:label for="name_drafter">Name</flux:label>
+   
 
-        {{-- Status --}}
-        <div>
-          <div class="form-control flux-white-ring">
-          <label class="block text-sm font-medium mb-1">Status</label>
-        <flux:select wire:model.defer="status" placeholder="Selecciona estado" class="w-full border-white text-white  focus:border-white focus:ring-2 focus:ring-white focus:outline-none">
-            <flux:select.option value="1">Enabled</flux:select.option>
-            <flux:select.option value="0">Disabled</flux:select.option>
-        </flux:select>
+    <flux:input
+      id="name_drafter"
+      wire:model.defer="name_drafter"
+      placeholder="Drafter name"
+      autocomplete="off"
+    />
 
-          @error('status')
-            <p class="text-error text-sm mt-1">{{ $message }}</p>
-          @enderror
-        </div></div>
+    <flux:error name="name_drafter" />
+  </flux:field>
 
-        {{-- Actions --}}
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <a wire:navigate href="{{ route('drafters.index') }}" class="btn btn-ghost">Cancel</a>
-          <button type="submit" class="btn btn-primary btn-active">Save</button>
+  {{-- Description --}}
+  <flux:field>
+    <flux:label for="description_drafter">Description</flux:label>
 
 
-          
-        </div>
-      </form>
+    <flux:textarea
+      id="description_drafter"
+      wire:model.defer="description_drafter"
+      rows="3"
+      placeholder="Optional description"
+    />
+
+    <flux:error name="description_drafter" />
+  </flux:field>
+
+  {{-- Status --}}
+  <flux:field>
+    <flux:label for="status">Status</flux:label>
+
+
+    <flux:select
+      id="status"
+      wire:model.defer="status"
+      placeholder="Select status"
+      class="w-full"
+    >
+      <flux:select.option value="1">Enabled</flux:select.option>
+      <flux:select.option value="0">Disabled</flux:select.option>
+    </flux:select>
+
+    <flux:error name="status" />
+  </flux:field>
+
+  {{-- Actions --}}
+  <div class="flex items-center justify-end gap-3 pt-2">
+    <flux:button variant="ghost" wire:navigate href="{{ route('drafters.index') }}">
+      Cancel
+    </flux:button>
+
+    <flux:button type="submit" variant="primary">
+      Save
+    </flux:button>
+  </div>
+</form>

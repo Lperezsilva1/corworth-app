@@ -3,7 +3,7 @@
   <head>
     @include('partials.head')
 
-    
+   
     @livewireStyles
   </head>
   <body class="min-h-screen bg-white dark:bg-zinc-800">
@@ -129,9 +129,10 @@
     {{-- ===================== CONTENIDO ===================== --}}
     {{ $slot }}
 
-    @fluxScripts
 
+    
     @livewireScripts
+        @fluxScripts
     {{-- ===================== TOAST GLOBAL ===================== --}}
     <div
       x-data="{ show: false, message: '' }"
@@ -147,4 +148,19 @@
       </div>
     </div>
   </body>
+  <script>
+  // Monta Flux al cargar y después de cada render de Livewire
+  document.addEventListener('livewire:load', () => {
+    window?.Flux?.mount?.();
+  });
+  document.addEventListener('livewire:navigated', () => {
+    window?.Flux?.mount?.();
+  });
+  // Cuando Livewire actualiza el DOM del componente actual
+  document.addEventListener('livewire:initialized', () => {
+    Livewire.hook('message.processed', () => {
+      window?.Flux?.mount?.();
+    });
+  });
+</script>
 </html>

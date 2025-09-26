@@ -131,7 +131,7 @@ class ProjectsShow extends Component
             'fullset_end_date'   => ['nullable','date','after_or_equal:fullset_start_date'],
 
             // FK a statuses.id
-            'general_status'     => ['nullable','integer','exists:statuses,id'],
+           
             'notes'              => ['nullable','string'],
 
             // 7 ítems
@@ -186,7 +186,7 @@ class ProjectsShow extends Component
     public function saveEdit(): void
     {
         $data = $this->validate();
-
+        unset($data['general_status']); // ✅ evita sobreescribir el estado
         // Campos a auditar (incluye los 7 ítems y FKs de fase como IDs)
         $track = [
             'building_id','seller_id',
@@ -265,6 +265,7 @@ class ProjectsShow extends Component
                 $changes[] = "{$name}: {$fmt($prev,$k)} → {$fmt($v,$k)}";
             }
         }
+         sleep(2); // solo para probar que el spinner y overlay aparezcan
 
         if ($changes) {
             ProjectComment::create([

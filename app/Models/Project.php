@@ -32,7 +32,7 @@ class Project extends Model
         'fullset_start_date',
         'fullset_end_date',
         // General
-        'general_status',        // FK a statuses.id
+        
         'notes',
         // Front Client
         'seller_door_ok','seller_door_notes',
