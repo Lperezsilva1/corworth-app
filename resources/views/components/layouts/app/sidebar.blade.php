@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="dark" class="wireframe">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" >
   <head>
     @include('partials.head')
 
@@ -165,4 +165,5 @@
     });
   });
 </script>
+
 </html>

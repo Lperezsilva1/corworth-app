@@ -30,6 +30,7 @@
   <livewire:drafters.drafters-table />
 </div>
 
+
 {{-- Modal DaisyUI --}}
     @if($this->modalOpen)
       <div class="modal modal-open">

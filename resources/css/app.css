@@ -30,6 +30,10 @@
     --color-accent-foreground: var(--color-white);
 }
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @layer theme {
     .dark {
         --color-accent: var(--color-white);
@@ -172,6 +176,6 @@ html {
         --color-accent-foreground: var(--color-zinc-800);
     }
 }
-@plugin "daisyui" {
-  themes: false;
-}
+ @plugin "daisyui" {
+   themes: light --default, business --prefersdark;
+ }
