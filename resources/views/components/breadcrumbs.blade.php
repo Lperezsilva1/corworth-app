@@ -1,29 +1,41 @@
-@props(['items' => []])
+@props([
+    // Ejemplo: [['label'=>'Home','url'=>'/'], ['label'=>'Sellers']]
+    'items' => [],
+    'showHomeIcon' => true,
+])
 
-<nav class="text-sm mb-4" aria-label="Breadcrumb">
-  <ol class="flex flex-wrap items-center gap-2 text-base-content/70">
-    @foreach ($items as $i => $item)
-      @php
-        $isLast = $i === count($items) - 1;
-        $label  = $item['label'] ?? '';
-        $url    = $item['url']   ?? null;
-      @endphp
+<flux:breadcrumbs {{ $attributes->class(['mb-4']) }}>
+    @foreach($items as $i => $item)
+        @php
+            $label = $item['label'] ?? null;
+            $url   = $item['url']   ?? null;
+            $isLast = $i === count($items) - 1;
+        @endphp
 
-      @if ($url && !$isLast)
-        <li>
-          <a wire:navigate href="{{ $url }}" class="hover:underline">
-            {{ $label }}
-          </a>
-        </li>
-      @else
-        <li class="text-base-content font-medium">
-          {{ $label }}
-        </li>
-      @endif
-
-      @unless($isLast)
-        <li aria-hidden="true" class="opacity-60">/</li>
-      @endunless
+        @if($label)
+            @if(!$isLast && $url)
+                <flux:breadcrumbs.item href="{{ $url }}">
+                    @if($showHomeIcon && $i === 0)
+                     
+                    @endif
+                    {{ $label }}
+                </flux:breadcrumbs.item>
+            @else
+                <flux:breadcrumbs.item>
+                    @if($showHomeIcon && $i === 0)
+                        <svg class="inline-block -mt-px mr-1 h-4 w-4 opacity-80"
+                             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 10.5L12 3l9 7.5"></path>
+                            <path d="M5 10.5V21h14V10.5"></path>
+                        </svg>
+                    @endif
+                    {{ $label }}
+                </flux:breadcrumbs.item>
+            @endif
+        @endif
     @endforeach
-  </ol>
-</nav>
+
+    {{-- Permite usar directamente slots en vez de :items --}}
+    {{ $slot }}
+</flux:breadcrumbs>

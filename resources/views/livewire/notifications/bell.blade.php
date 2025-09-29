@@ -1,15 +1,27 @@
 <div>
  {{-- resources/views/livewire/notifications/bell.blade.php --}}
 <div class="relative" x-data="{open:false}" @keydown.escape.window="open=false">
-  <button type="button" class="btn btn-ghost btn-circle" @click="open = !open">
-    <div class="indicator">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 22h4"/></svg>
-      @if($this->unreadCount > 0)
-        <span class="badge badge-primary badge-sm indicator-item">{{ $this->unreadCount }}</span>
-      @endif
-    </div>
-  </button>
+<flux:button variant="ghost"  @click="open = !open" class="relative">
+    {{-- Icono SVG campana --}}
+    <svg xmlns="http://www.w3.org/2000/svg"
+         class="h-6 w-6"
+         viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.8">
+        <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+        <path d="M10 22h4"/>
+    </svg>
+
+    {{-- Badge indicador --}}
+    @if($this->unreadCount > 0)
+        <flux:badge
+            color="primary"
+            size="sm"
+            class="absolute -top-1 -right-1"
+        >
+            {{ $this->unreadCount }}
+        </flux:badge>
+    @endif
+</flux:button>
 
   <div x-show="open" x-transition @click.outside="open=false"
        class="absolute right-0 mt-2 w-96 max-w-[95vw] bg-base-100 border border-base-300 rounded-xl shadow-xl z-[60]">

@@ -13,12 +13,13 @@ return [
     | Configure here the theme of your choice.
     */
 
-    //'theme' => \PowerComponents\LivewirePowerGrid\Themes\Tailwind::class,
-    'theme' => \PowerComponents\LivewirePowerGrid\Themes\DaisyUI::class,
-     'theme' => \PowerComponents\LivewirePowerGrid\Themes\FluxLike::class,
+  // 'theme' => \PowerComponents\LivewirePowerGrid\Themes\Tailwind::class,
+  // 'theme' => \PowerComponents\LivewirePowerGrid\Themes\DaisyUI::class,
+     //'theme' => \PowerComponents\LivewirePowerGrid\Themes\FluxLike::class,
    // 'theme' => \PowerComponents\LivewirePowerGrid\Themes\miniaml::class,
-   // 'theme' => \PowerComponents\LivewirePowerGrid\Themes\Bootstrap5::class,
-    //'theme' => \App\PowerGrid\FluxTheme::class, // <— tu clase de tema
+    //'theme' => \PowerComponents\LivewirePowerGrid\Themes\Bootstrap5::class,
+  'theme' => \App\PowerGrid\mytheme::class,
+  //'theme' => \App\PowerGrid\Fluxlike::class,
 
     'cache_ttl' => null,
 

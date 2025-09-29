@@ -151,7 +151,7 @@ final class ProjectsTable extends PowerGridComponent
             ->add('project_with_building', fn($p) =>
                 '<div class="flex flex-col">
                     <a wire:navigate href="'.e(route('projects.show', ['project' => $p->id])).'"
-                       class="link hover:underline font-medium">'.e($p->project_name).'</a>
+                       class="aaa hover:underline font-medium">'.e($p->project_name).'</a>
                     <span class="text-sm text-gray-500">'.e($p->building?->name_building ?? '—').'</span>
                 </div>'
             )

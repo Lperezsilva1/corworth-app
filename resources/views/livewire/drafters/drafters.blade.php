@@ -26,7 +26,7 @@
 
     {{-- Tabla (PowerGrid/Livewire) --}}
 
-   <div class="-mx-4 sm:mx-0">
+   <div class="mt-6">
   <livewire:drafters.drafters-table />
 </div>
 

@@ -1,10 +1,27 @@
 {{-- resources/views/livewire/dashboard/main.blade.php --}}
 <div class="p-8 space-y-8 w-full" x-data>
   {{-- ===== Header ===== --}}
-  <div>
-    <div class="text-xl font-semibold">Projects</div>
-    <div class="text-sm text-base-content/60">Overview and pending projects</div>
-  </div>
+  
+    <div class="relative mb-6 w-full">
+      
+      {{-- Breadcrumbs --}}
+      <x-breadcrumbs :items="[
+        ['label' => 'Home', 'url' => url('/dashboard')],
+      
+      ]" />
+
+      
+      <!-- Contenedor título + botón -->
+      <div class="flex items-center justify-between">
+        <div>
+          <flux:heading size="xl" level="1">{{ __('Dashboard') }}</flux:heading>
+          <flux:subheading size="lg" class="mb-6">{{ __('Overview and pending projects') }}</flux:subheading>
+        </div>
+
+        <!-- Botón a la derecha (SPA) -->
+        <flux:button wire:navigate href="{{ route('buildings.create') }}">+ Add New</flux:button>
+      </div>
+    </div>
 
   {{-- ===== KPI CARDS (animadas + sparkline opcional) ===== --}}
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

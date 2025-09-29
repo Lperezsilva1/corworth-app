@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="nord" class="wireframe">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="dark" class="wireframe">
   <head>
     @include('partials.head')
 
@@ -88,14 +88,16 @@
     </flux:header>
 
  {{-- ===================== HEADER DESKTOP (solo desktop) ===================== --}}
+
 <flux:header class="hidden lg:block sticky top-0 z-50 bg-white dark:bg-zinc-900 
                   border-b border-zinc-200 dark:border-zinc-700 lg:pl-64 overflow-visible">
+                  
   <div class="h-14 flex items-center gap-3 px-6">
 
     {{-- Acciones a la derecha (buscador + campana + perfil) --}}
     <div class="ml-auto flex items-center gap-3">
       {{-- 🔍 Buscador global --}}
-      <div class="shrink-0">
+      <div class="">
         @livewire('global-search', [], key('global-search-header'))
       </div>
 

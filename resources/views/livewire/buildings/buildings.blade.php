@@ -8,6 +8,7 @@
         ['label' => 'Buildings']
       ]" />
 
+      
       <!-- Contenedor título + botón -->
       <div class="flex items-center justify-between">
         <div>
@@ -23,7 +24,11 @@
     <flux:separator variant="subtle" />
 
     {{-- Tabla (PowerGrid/Livewire) --}}
+    <div class="mt-6">
     <livewire:buildings.buildings-table />
+    </div>
+
+    
 
     {{-- Modal DaisyUI --}}
     @if($this->modalOpen)

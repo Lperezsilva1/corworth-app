@@ -1,8 +1,5 @@
 @import 'tailwindcss';
-
 @import '../../vendor/livewire/flux/dist/flux.css';
-
-
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
@@ -70,16 +67,13 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
-@tailwind base;
-@tailwind components;
+
 @tailwind utilities;
+
 html {
     overflow-y: scroll;
 }
 @import "tailwindcss";
-
-
-
 
 
 @layer utilities {
@@ -165,4 +159,19 @@ html {
   min-width: 28px !important;
   padding-left: .25rem !important;
   padding-right: .25rem !important;
+}
+@theme {
+    --color-accent: var(--color-zinc-800);
+    --color-accent-content: var(--color-zinc-800);
+    --color-accent-foreground: var(--color-white);
+}
+@layer theme {
+    .dark {
+        --color-accent: var(--color-white);
+        --color-accent-content: var(--color-white);
+        --color-accent-foreground: var(--color-zinc-800);
+    }
+}
+@plugin "daisyui" {
+  themes: false;
 }

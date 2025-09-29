@@ -55,7 +55,7 @@
           @if($project->phase1Status?->key !== 'complete'
               && $project->phase1_drafter_id
               && $project->phase1_start_date)
-            <flux:button size="sm" variant="success" @click="$dispatch('open-phase1-complete-modal')">
+            <flux:button size="sm"  @click="$dispatch('open-phase1-complete-modal')">
               Mark Phase 1 Complete
             </flux:button>
           @endif

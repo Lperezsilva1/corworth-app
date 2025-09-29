@@ -8,6 +8,8 @@
         ['label' => 'Sellers']
       ]" />
 
+
+
       <!-- Contenedor título + botón -->
       <div class="flex items-center justify-between">
         <div>
@@ -23,8 +25,9 @@
     <flux:separator variant="subtle" />
 
     {{-- Tabla (PowerGrid/Livewire) --}}
+    <div class="mt-6" >
     <livewire:sellers.sellers-table />
-
+    </div>    
     {{-- Modal DaisyUI (crear/editar) --}}
     @if($this->modalOpen)
       <div class="modal modal-open">
