@@ -19,9 +19,10 @@
         <!-- Botón a la derecha (SPA) -->
         <flux:button wire:navigate href="{{ route('buildings.create') }}">+ Add New</flux:button>
       </div>
+      <flux:separator variant="subtle" />
     </div>
 
-    <flux:separator variant="subtle" />
+    
 
     {{-- Tabla (PowerGrid/Livewire) --}}
     <div class="mt-6">

@@ -22,23 +22,23 @@
 
       <flux:navlist variant="outline">
         <flux:navlist.group :heading="__('Platform')" class="grid">
-          <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
+          <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate  class="{{ request()->routeIs('dashboard') ? 'nav-active' : '' }}">
             {{ __('Dashboard') }}
           </flux:navlist.item>
 
-          <flux:navlist.item icon="calendar" :href="route('projects.index')" :current="request()->routeIs('projects.index')" wire:navigate>
+          <flux:navlist.item icon="calendar" :href="route('projects.index')" :current="request()->routeIs('projects.index')" wire:navigate class="{{ request()->routeIs('projects.index') ? 'nav-active' : '' }}">
             Projects
           </flux:navlist.item>
         </flux:navlist.group>
 
         <flux:navlist.group expandable heading="Master" class="hidden lg:grid">
-          <flux:navlist.item :href="route('drafters.index')" :current="request()->routeIs('drafters.index')" wire:navigate>
+          <flux:navlist.item :href="route('drafters.index')" :current="request()->routeIs('drafters.index')" wire:navigate class="{{ request()->routeIs('drafters.index') ? 'nav-active' : '' }}">
             Drafters
           </flux:navlist.item>
-          <flux:navlist.item :href="route('sellers.index')" :current="request()->routeIs('sellers.index')" wire:navigate>
+          <flux:navlist.item :href="route('sellers.index')" :current="request()->routeIs('sellers.index')" wire:navigate class="{{ request()->routeIs('sellers.index') ? 'nav-active' : '' }}">
             Sellers
           </flux:navlist.item>
-          <flux:navlist.item :href="route('buildings.index')" :current="request()->routeIs('buildings.index')" wire:navigate>
+          <flux:navlist.item :href="route('buildings.index')" :current="request()->routeIs('buildings.index')" wire:navigate class="{{ request()->routeIs('buildings.index') ? 'nav-active' : '' }}">
             Models
           </flux:navlist.item>
         </flux:navlist.group>
@@ -165,5 +165,25 @@
     });
   });
 </script>
+<style>
+  /* 1) Quita padding vertical del contenedor principal de Flux */
+  [data-flux-container] [data-flux-main]{
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
 
+  /* 2) Quita padding vertical del PRIMER hijo que trae p-6 */
+  [data-flux-main] > .p-6{
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* 3) En desktop, anula también lg:p-8 del hijo (Tailwind la genera como .lg\:p-8) */
+  @media (min-width: 1024px){
+    [data-flux-main] > .lg\:p-8{
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+  }
+</style>
 </html>

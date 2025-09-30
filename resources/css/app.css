@@ -179,3 +179,15 @@ html {
  @plugin "daisyui" {
    themes: light --default, business --prefersdark;
  }
+.dark [data-nav-sidebar] [data-current="true"] {
+  color: hsl(var(--color-primary-content)) !important;
+  font-weight: 600; /* opcional, para marcarlo más */
+}
+[data-nav-sidebar] [data-current="true"] {
+  color: hsl(var(--color-primary-content)) !important;
+  font-weight: 600 !important; /* opcional, para remarcar */
+}
+.nav-active {
+  color: hsl(var(--color-primary-content)) !important;
+  font-weight: 600 !important;
+}

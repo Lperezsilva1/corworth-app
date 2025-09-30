@@ -28,156 +28,215 @@ class Main extends Component
     public function updatedRange(): void   { $this->loadData(); }
     public function updatedCompare(): void { $this->loadData(); }
 
-    protected function loadData(): void
-    {
-        [$from, $to]       = $this->currentRange();
-        [$cmpFrom, $cmpTo] = $this->compareRange($from, $to);
+   
+   
+   
+   protected function loadData(): void
+{
+    [$from, $to]       = $this->currentRange();
+    [$cmpFrom, $cmpTo] = $this->compareRange($from, $to);
 
-        // IDs por key (cache)
-        $ids = Cache::remember('status:id-by-key', 300, fn () => Status::pluck('id','key')->all());
-        $id  = fn (string $k) => $ids[$k] ?? null;
+    // IDs por key (cache)
+    $ids = Cache::remember('status:id-by-key', 300, fn () => Status::pluck('id','key')->all());
+    $id  = fn (string $k) => $ids[$k] ?? null;
 
-        $pendingId  = $id('pending');
-        $workingId  = $id('working');
-        $approvedId = $id('approved');
-        $cancelId   = $id('cancelled');
+    $pendingId  = $id('pending');
+    $workingId  = $id('working');
+    $approvedId = $id('approved');
+    $cancelId   = $id('cancelled');
+    $awaitingId = $id('awaiting_approval');
+    $deviatedId = $id('deviated');
 
-        // Métricas base
-        $total         = Project::count();
-        $pendingCount  = $pendingId  ? Project::where('general_status',$pendingId)->count() : 0;
-        $workingCount  = $workingId  ? Project::where('general_status',$workingId)->count() : 0;
-        $approvedCount = $approvedId ? Project::where('general_status',$approvedId)->count() : 0;
-        $cancelledCount= $cancelId   ? Project::where('general_status',$cancelId)->count()   : 0;
-        $draftCount    = Project::whereNull('general_status')->count();
+    // ====== MÉTRICAS BASE ======
+    $total          = Project::count();
+    $pendingCount   = $pendingId  ? Project::where('general_status',$pendingId)->count() : 0;
+    $workingCount   = $workingId  ? Project::where('general_status',$workingId)->count() : 0;
+    $approvedCount  = $approvedId ? Project::where('general_status',$approvedId)->count() : 0;
+    $cancelledCount = $cancelId   ? Project::where('general_status',$cancelId)->count()   : 0;
+    $awaitingCount  = $awaitingId ? Project::where('general_status',$awaitingId)->count() : 0;
+    $deviatedCount  = $deviatedId ? Project::where('general_status',$deviatedId)->count() : 0;
+    $draftCount     = Project::whereNull('general_status')->count();
 
-        $createdThisRange  = Project::whereBetween('created_at', [$from,$to])->count();
-        $approvedThisRange = $approvedId
-            ? Project::where('general_status',$approvedId)->whereBetween('updated_at',[$from,$to])->count()
-            : 0;
+    // Rango actual
+    $createdThisRange  = Project::whereBetween('created_at', [$from,$to])->count();
+    $approvedThisRange = $approvedId
+        ? Project::where('general_status',$approvedId)->whereBetween('updated_at',[$from,$to])->count()
+        : 0;
 
-        // Comparación (ventana temporal)
-        $pendingPrev  = $pendingId  ? Project::where('general_status',$pendingId)->whereBetween('updated_at',[$cmpFrom,$cmpTo])->count() : 0;
-        $workingPrev  = $workingId  ? Project::where('general_status',$workingId)->whereBetween('updated_at',[$cmpFrom,$cmpTo])->count() : 0;
-        $approvedPrev = $approvedId ? Project::where('general_status',$approvedId)->whereBetween('updated_at',[$cmpFrom,$cmpTo])->count() : 0;
+    // ====== COMPARACIÓN (VENTANA TEMPORAL) ======
+    // “Prev period” para estados (usando updated_at)
+    $pendingPrev   = $pendingId  ? Project::where('general_status',$pendingId)->whereBetween('updated_at',[$cmpFrom,$cmpTo])->count() : 0;
+    $workingPrev   = $workingId  ? Project::where('general_status',$workingId)->whereBetween('updated_at',[$cmpFrom,$cmpTo])->count() : 0;
+    $approvedPrev  = $approvedId ? Project::where('general_status',$approvedId)->whereBetween('updated_at',[$cmpFrom,$cmpTo])->count() : 0;
+    $awaitingPrev  = $awaitingId ? Project::where('general_status',$awaitingId)->whereBetween('updated_at',[$cmpFrom,$cmpTo])->count() : 0;
+    $deviatedPrev  = $deviatedId ? Project::where('general_status',$deviatedId)->whereBetween('updated_at',[$cmpFrom,$cmpTo])->count() : 0;
 
-        // KPIs
-        $this->cards = [
-            ['title'=>'Total Projects','value'=>number_format($total),'delta'=>$this->deltaPct($total, $total)],
-            ['title'=>'Pending','value'=>number_format($pendingCount),'delta'=>$this->deltaPct($pendingCount,$pendingPrev)],
-            ['title'=>'In Progress','value'=>number_format($workingCount),'delta'=>$this->deltaPct($workingCount,$workingPrev)],
-            ['title'=>'Approved','value'=>number_format($approvedCount),'delta'=>$this->deltaPct($approvedCount,$approvedPrev)],
-        ];
+    // “Prev period” para creados (usando created_at)
+    $createdPrev = Project::whereBetween('created_at', [$cmpFrom,$cmpTo])->count();
 
-        // ===== Pie: distribución por status (incluye NULL como Draft) =====
-        $this->pie = [
-            ['label' => 'Approved',  'key'=>'approved',  'value' => $approvedCount],
-            ['label' => 'Working',   'key'=>'working',   'value' => $workingCount],
-            ['label' => 'Pending',   'key'=>'pending',   'value' => $pendingCount],
-            ['label' => 'Cancelled', 'key'=>'cancelled', 'value' => $cancelledCount],
-            ['label' => 'Draft',     'key'=>'draft',     'value' => $draftCount],
-        ];
+    // “Prev total” = total acumulado al final del periodo comparativo
+    $totalPrev = Project::where('created_at', '<=', $cmpTo)->count();
 
-        // ===== Tabla: TODOS menos Approved y Cancelled (incluye NULL) =====
-        $excludeIds = Status::whereIn('key', ['approved', 'cancelled'])
-            ->pluck('id')
-            ->filter()
-            ->values()
-            ->all();
+    // Open = Pending + Working
+    $openCount = $pendingCount + $workingCount;
+    $openPrev  = $pendingPrev + $workingPrev;
 
-        $this->pendingProjects = Project::query()
-            ->with([
-                'building:id,name_building',
-                'seller:id,name_seller',
-                'drafterPhase1:id,name_drafter',
-                'drafterFullset:id,name_drafter',
-                'phase1Status:id,label,key',
-                'fullsetStatus:id,label,key',
-                'status:id,label,key', // general
-            ])
-            ->when(!empty($excludeIds), function ($q) use ($excludeIds) {
-                $q->where(function ($qq) use ($excludeIds) {
-                    $qq->whereNull('general_status')
-                       ->orWhereNotIn('general_status', $excludeIds);
-                });
-            })
-            ->orderByDesc('updated_at')
-            ->limit(12)
-            ->get([
-                'id','project_name','building_id','seller_id',
-                'phase1_drafter_id','fullset_drafter_id',
-                'phase1_status_id','fullset_status_id','general_status',
-                'updated_at'
-            ])
-            ->values()
-            ->map(function ($p, $i) {
-                return [
-                    'idx'          => $i + 1,
-                    'id'           => $p->id,
-                    'name'         => $p->project_name,
-                    'building'     => $p->building?->name_building,
-                    'seller'       => $p->seller?->name_seller,
+    // ====== CARDS (KPIs) ======
+    $this->cards = [
+        // Total acumulado (delta vs total al fin del periodo comparativo)
+        [
+            'title' => 'Total Projects',
+            'value' => number_format($total),
+            'delta' => $this->deltaPct($total, $totalPrev),
+        ],
 
-                    'p1_drafter'   => $p->drafterPhase1?->name_drafter,
-                    'p1_key'       => $p->phase1Status?->key,
-                    'p1_label'     => $p->phase1Status?->label,
+       
 
-                    'fs_drafter'   => $p->drafterFullset?->name_drafter,
-                    'fs_key'       => $p->fullsetStatus?->key,
-                    'fs_label'     => $p->fullsetStatus?->label,
+        // Aprobados (delta vs periodo anterior, ya tenías el conteo)
+        [
+            'title' => 'Approved',
+            'value' => number_format($approvedCount),
+            'delta' => $this->deltaPct($approvedCount,$approvedPrev),
+        ],
 
-                    'gen_key'      => $p->status?->key,
-                    'gen_label'    => $p->status?->label,
+        // Open = Pending + Working (con delta)
+        [
+            'title' => 'Open Projects',
+            'value' => number_format($openCount),
+            'delta' => $this->deltaPct($openCount, $openPrev),
+        ],
 
-                    'updated'      => optional($p->updated_at)->diffForHumans(),
-                ];
-            })
-            ->all();
+        // Awaiting PFS approval
+        [
+            'title' => 'Awaiting PFS approval',
+            'value' => number_format($awaitingCount),
+            'delta' => $this->deltaPct($awaitingCount,$awaitingPrev),
+        ],
 
-        // ===== Actividad (últimos 4) =====
-        $this->activity = \App\Models\ProjectComment::query()
-            ->with(['project:id,project_name','user:id,name'])
-            ->orderByDesc('created_at')
-            ->limit(4)
-            ->get(['id','project_id','user_id','title','body','is_system','source','created_at'])
-            ->map(function ($c) {
-                $title = (string)($c->title ?? 'Activity');
-                $body  = (string)($c->body ?? '');
-                $src   = (string)($c->source ?? '');
+        // Deviated
+        [
+            'title' => 'Deviated',
+            'value' => number_format($deviatedCount),
+            'delta' => $this->deltaPct($deviatedCount,$deviatedPrev),
+        ],
+    ];
 
-                $txt = strtolower($title.' '.$body.' '.$src);
-                if (str_contains($txt, 'approved')) {
-                    $icon='✅'; $color='text-success';
-                } elseif (str_contains($txt, 'awaiting') || str_contains($txt, 'approval')) {
-                    $icon='⏳'; $color='text-warning';
-                } elseif (str_contains($txt, 'working')) {
-                    $icon='⏳'; $color='text-info';
-                } elseif (str_contains($txt, 'pending')) {
-                    $icon='⚪'; $color='text-base-content/60';
-                } elseif (str_contains($txt, 'cancel')) {
-                    $icon='❌'; $color='text-error';
-                } elseif (str_contains($txt, 'auto update') || str_contains($txt, 'auto_diff')) {
-                    $icon='📝'; $color='text-base-content/70';
-                } else {
-                    $icon='💬'; $color='text-base-content/70';
-                }
+    // ====== PIE: distribución por status ======
+    $this->pie = [
+        ['label' => 'Approved',          'key'=>'approved',          'value' => $approvedCount],
+        ['label' => 'Working',           'key'=>'working',           'value' => $workingCount],
+        ['label' => 'Pending',           'key'=>'pending',           'value' => $pendingCount],
+        ['label' => 'Awaiting approval', 'key'=>'awaiting_approval', 'value' => $awaitingCount],
+        ['label' => 'Deviated',          'key'=>'deviated',          'value' => $deviatedCount],
+        ['label' => 'Cancelled',         'key'=>'cancelled',         'value' => $cancelledCount],
+        
+    ];
 
-                return [
-                    'id'        => $c->id,
-                    'when'      => optional($c->created_at)->diffForHumans(),
-                    'title'     => $title,
-                    'body'      => \Illuminate\Support\Str::limit($body, 140),
-                    'projectId' => $c->project?->id,
-                    'project'   => $c->project?->project_name,
-                    'user'      => $c->user?->name ?? 'System',
-                    'icon'      => $icon,
-                    'color'     => $color,
-                ];
-            })
-            ->all();
+    // ====== Tabla (igual que la tuya) ======
+    $excludeIds = Status::whereIn('key', ['approved', 'cancelled'])
+        ->pluck('id')
+        ->filter()
+        ->values()
+        ->all();
 
-        // ===== Línea: Created vs Approved (últimas 8 semanas) =====
-        $this->chart = $this->buildWeeklyChart($approvedId);
-    }
+    $this->pendingProjects = Project::query()
+        ->with([
+            'building:id,name_building',
+            'seller:id,name_seller',
+            'drafterPhase1:id,name_drafter',
+            'drafterFullset:id,name_drafter',
+            'phase1Status:id,label,key',
+            'fullsetStatus:id,label,key',
+            'status:id,label,key', // general
+        ])
+        ->when(!empty($excludeIds), function ($q) use ($excludeIds) {
+            $q->where(function ($qq) use ($excludeIds) {
+                $qq->whereNull('general_status')
+                   ->orWhereNotIn('general_status', $excludeIds);
+            });
+        })
+        ->orderByDesc('updated_at')
+        ->limit(12)
+        ->get([
+            'id','project_name','building_id','seller_id',
+            'phase1_drafter_id','fullset_drafter_id',
+            'phase1_status_id','fullset_status_id','general_status',
+            'updated_at'
+        ])
+        ->values()
+        ->map(function ($p, $i) {
+            return [
+                'idx'          => $i + 1,
+                'id'           => $p->id,
+                'name'         => $p->project_name,
+                'building'     => $p->building?->name_building,
+                'seller'       => $p->seller?->name_seller,
+
+                'p1_drafter'   => $p->drafterPhase1?->name_drafter,
+                'p1_key'       => $p->phase1Status?->key,
+                'p1_label'     => $p->phase1Status?->label,
+
+                'fs_drafter'   => $p->drafterFullset?->name_drafter,
+                'fs_key'       => $p->fullsetStatus?->key,
+                'fs_label'     => $p->fullsetStatus?->label,
+
+                'gen_key'      => $p->status?->key,
+                'gen_label'    => $p->status?->label,
+
+                'updated'      => optional($p->updated_at)->diffForHumans(),
+            ];
+        })
+        ->all();
+
+    // ====== Actividad (como la tuya) ======
+    $this->activity = \App\Models\ProjectComment::query()
+        ->with(['project:id,project_name','user:id,name'])
+        ->orderByDesc('created_at')
+        ->limit(4)
+        ->get(['id','project_id','user_id','title','body','is_system','source','created_at'])
+        ->map(function ($c) {
+            $title = (string)($c->title ?? 'Activity');
+            $body  = (string)($c->body ?? '');
+            $src   = (string)($c->source ?? '');
+
+            $txt = strtolower($title.' '.$body.' '.$src);
+            if (str_contains($txt, 'approved')) {
+                $icon='✅'; $color='text-success';
+            } elseif (str_contains($txt, 'awaiting') || str_contains($txt, 'approval')) {
+                $icon='⏳'; $color='text-warning';
+            } elseif (str_contains($txt, 'working')) {
+                $icon='⏳'; $color='text-info';
+            } elseif (str_contains($txt, 'pending')) {
+                $icon='⚪'; $color='text-base-content/60';
+            } elseif (str_contains($txt, 'cancel')) {
+                $icon='❌'; $color='text-error';
+            } elseif (str_contains($txt, 'auto update') || str_contains($txt, 'auto_diff')) {
+                $icon='📝'; $color='text-base-content/70';
+            } else {
+                $icon='💬'; $color='text-base-content/70';
+            }
+
+            return [
+                'id'        => $c->id,
+                'when'      => optional($c->created_at)->diffForHumans(),
+                'title'     => $title,
+                'body'      => \Illuminate\Support\Str::limit($body, 140),
+                'projectId' => $c->project?->id,
+                'project'   => $c->project?->project_name,
+                'user'      => $c->user?->name ?? 'System',
+                'icon'      => $icon,
+                'color'     => $color,
+            ];
+        })
+        ->all();
+
+    // ====== Línea: Created vs Approved (últimas 8 semanas) ======
+    $this->chart = $this->buildWeeklyChart($approvedId);
+}
+
+
+
+
 
     protected function buildWeeklyChart(?int $approvedId): array
 {

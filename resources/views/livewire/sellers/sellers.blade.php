@@ -19,13 +19,14 @@
 
         <!-- Botón a la derecha (SPA) -->
         <flux:button wire:navigate href="{{ route('sellers.create') }}">+ Add New</flux:button>
-      </div>
+      </div> 
+       <flux:separator variant="subtle" />
     </div>
 
-    <flux:separator variant="subtle" />
+  
 
     {{-- Tabla (PowerGrid/Livewire) --}}
-    <div class="mt-6" >
+    <div class="" >
     <livewire:sellers.sellers-table />
     </div>    
     {{-- Modal DaisyUI (crear/editar) --}}

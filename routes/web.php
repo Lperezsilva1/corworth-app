@@ -54,6 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardMain::class)->name('dashboard');
     Route::get('/activity', ActivityIndex::class)->name('activity.index');
 });
+Route::get('/ping', fn() => 'OK');
 
 // ===== ÁREA AUTENTICADA =====
 Route::middleware(['auth'])->group(function () {

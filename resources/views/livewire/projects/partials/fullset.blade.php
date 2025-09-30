@@ -13,91 +13,106 @@
   $toneClass = $tones[$fsKey] ?? 'bg-zinc-50 text-zinc-700 ring-zinc-200';
 @endphp
 
-<div class="rounded-md border border-base-300 bg-base-100 shadow-sm overflow-hidden">
-  <div class="px-4 py-3">
-    <flux:subheading size="sm">Full Set</flux:subheading>
-  </div>
-  <div class="border-t border-base-300"></div>
+<div class="rounded-xl bg-base-100 shadow-sm border border-base-200/80 dark:border-white/10 font-[Inter] text-[15px]">
+  {{-- Header --}}
+  <div class="px-6 py-5 border-b border-base-200 dark:border-white/10">
+    <div class="flex items-start gap-3">
+      {{-- Icono --}}
+      <svg class="h-6 w-6 text-primary/80 mt-0.5" xmlns="http://www.w3.org/2000/svg" fill="none"
+           viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
 
-  <div class="px-4 py-5 grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div>
+        <flux:heading size="lg" class="font-semibold leading-tight">Full Set</flux:heading>
+        <flux:text size="xs" class="text-base-content/60 mt-1">
+          Handle the complete drawing package, assign tasks, and monitor progress for the Full Set stage.
+        </flux:text>
+      </div>
+    </div>
+  </div>
+
+  {{-- Body --}}
+  <dl class="divide-y divide-base-200 dark:divide-white/10">
     {{-- Drafter --}}
-    <div class="md:col-span-2">
-      @if($editing)
-        <flux:field>
-          <flux:label for="fullset_drafter_id">Drafter</flux:label>
-          <flux:select id="fullset_drafter_id" wire:model.defer="fullset_drafter_id" searchable placeholder="Select drafter" class="w-full">
-            <flux:select.option value="">— Select drafter —</flux:select.option>
-            @foreach($drafters as $d)
-              <flux:select.option value="{{ $d->id }}">{{ $d->name_drafter }}</flux:select.option>
-            @endforeach
-          </flux:select>
-          <flux:error name="fullset_drafter_id" class="text-xs text-error mt-1" />
-        </flux:field>
-      @else
-        <flux:heading size="xs">Drafter</flux:heading>
-        <flux:text class="mt-1">{{ $project->drafterFullset?->name_drafter ?? '—' }}</flux:text>
-      @endif
+    <div class="pl-15 pr-6 py-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <dt>
+        <div class="text-sm font-medium text-base-content">Drafter</div>
+        <div class="text-xs text-base-content/60">Assign the drafter in charge of this phase.</div>
+      </dt>
+      <dd class="sm:col-span-2">
+        @if($editing)
+          <flux:field>
+            <flux:select id="fullset_drafter_id" wire:model.defer="fullset_drafter_id" searchable placeholder="— Select drafter —" class="w-full">
+              <flux:select.option value="">— Select drafter —</flux:select.option>
+              @foreach($drafters as $d)
+                <flux:select.option value="{{ $d->id }}">{{ $d->name_drafter }}</flux:select.option>
+              @endforeach
+            </flux:select>
+            <flux:error name="fullset_drafter_id" class="text-xs text-error mt-1" />
+          </flux:field>
+        @else
+          <span class="text-base-content/70">{{ $project->drafterFullset?->name_drafter ?? '—' }}</span>
+        @endif
+      </dd>
     </div>
 
     {{-- Status --}}
-    <div>
-      <flux:heading size="xs">Status</flux:heading>
-      <div class="mt-2 flex items-center gap-3 flex-wrap">
+    <div class="pl-15 pr-6 py-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <dt>
+        <div class="text-sm font-medium text-base-content">Status</div>
+        <div class="text-xs text-base-content/60">Current progress of the Full Set package.</div>
+      </dt>
+      <dd class="sm:col-span-2 flex items-center gap-3 flex-wrap">
         @if($fsLabel)
-          <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset shadow-sm {{ $toneClass }}">
+          <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ring-1 ring-inset shadow-sm {{ $toneClass }}">
             <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $fsLabel }}
           </span>
         @else
-          <flux:text class="text-base-content/60">—</flux:text>
+          <span class="text-base-content/60">—</span>
         @endif
 
-        @if($editing)
-          @if($project->fullsetStatus?->key !== 'complete'
-              && $project->fullset_drafter_id
-              && $project->fullset_start_date)
-            <flux:button size="sm" variant="success" @click="$dispatch('open-fullset-complete-modal')">
-              Mark Full Set Complete
-            </flux:button>
-          @endif
-          <flux:error name="fullset_status_id" class="text-xs text-error mt-1" />
+        @if($editing && $project->fullsetStatus?->key !== 'complete' && $project->fullset_drafter_id && $project->fullset_start_date)
+          <flux:button size="sm"  @click="$dispatch('open-fullset-complete-modal')">
+            Mark Full Set Complete
+          </flux:button>
         @endif
-      </div>
-    </div>
-
-    {{-- Duration --}}
-    <div>
-      <flux:heading size="xs">Duration</flux:heading>
-      <flux:text class="mt-2">
-        {{ $project->fullset_duration ? $project->fullset_duration.' days' : '—' }}
-      </flux:text>
+        <flux:error name="fullset_status_id" class="text-xs text-error mt-1" />
+      </dd>
     </div>
 
     {{-- Start date --}}
-    <div>
-      @if($editing)
-        <flux:field>
-          <flux:label for="fullset_start_date">Start</flux:label>
-          <flux:input id="fullset_start_date" type="date" wire:model.defer="fullset_start_date" class="w-full" />
-          <flux:error name="fullset_start_date" class="text-xs text-error mt-1" />
-        </flux:field>
-      @else
-        <flux:heading size="xs">Start</flux:heading>
-        <flux:text class="mt-2">{{ optional($project->fullset_start_date)->format('Y-m-d') ?? '—' }}</flux:text>
-      @endif
+    <div class="pl-15 pr-6 py-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <dt>
+        <div class="text-sm font-medium text-base-content">Start</div>
+        <div class="text-xs text-base-content/60">Date when the Full Set preparation began.</div>
+      </dt>
+      <dd class="sm:col-span-2">
+        <span class="text-base-content/70">{{ optional($project->fullset_start_date)->format('Y-m-d') ?? '—' }}</span>
+      </dd>
     </div>
 
     {{-- End date --}}
-    <div>
-      @if($editing)
-        <flux:field>
-          <flux:label for="fullset_end_date">End</flux:label>
-          <flux:input id="fullset_end_date" type="date" wire:model.defer="fullset_end_date" class="w-full" />
-          <flux:error name="fullset_end_date" class="text-xs text-error mt-1" />
-        </flux:field>
-      @else
-        <flux:heading size="xs">End</flux:heading>
-        <flux:text class="mt-2">{{ optional($project->fullset_end_date)->format('Y-m-d') ?? '—' }}</flux:text>
-      @endif
+    <div class="pl-15 pr-6 py-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <dt>
+        <div class="text-sm font-medium text-base-content">End</div>
+        <div class="text-xs text-base-content/60">Target or actual completion date of the Full Set.</div>
+      </dt>
+      <dd class="sm:col-span-2">
+        <span class="text-base-content/70">{{ optional($project->fullset_end_date)->format('Y-m-d') ?? '—' }}</span>
+      </dd>
     </div>
-  </div>
+
+    {{-- Duration --}}
+    <div class="pl-15 pr-6 py-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <dt>
+        <div class="text-sm font-medium text-base-content">Duration</div>
+        <div class="text-xs text-base-content/60">Total time elapsed from start to finish.</div>
+      </dt>
+      <dd class="sm:col-span-2 text-base-content/70">
+        {{ $project->fullset_duration ? $project->fullset_duration.' days' : '—' }}
+      </dd>
+    </div>
+  </dl>
 </div>

@@ -54,7 +54,12 @@
               </div>
               @if($desc) <div class="text-xs opacity-80 line-clamp-2">{{ $desc }}</div> @endif
               <div class="mt-2 flex gap-2">
-                <a href="{{ $url }}" class="btn btn-xs" wire:click="markAsRead('{{ $n->id }}')">Open</a>
+               <a wire:navigate
+                  href="{{ route('projects.show', ['project' => $data['project_id'], 'tab' => 'notes']) }}"
+                  class="btn btn-xs"
+                  wire:click="markAsRead('{{ $n->id }}')">
+                  Open
+                </a>
                 @if($isUnread)
                   <button type="button" class="btn btn-xs btn-ghost"
                           wire:click="markAsRead('{{ $n->id }}')">Mark read</button>

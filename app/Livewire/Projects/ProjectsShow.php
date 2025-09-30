@@ -70,6 +70,8 @@ class ProjectsShow extends Component
             'building','seller','drafterPhase1','drafterFullset','status','phase1Status','fullsetStatus'
         ]);
 
+         $this->tab = request()->get('tab', 'overview');
+
         $this->buildings = Building::orderBy('name_building')->get(['id','name_building']);
         $this->sellers   = Seller::orderBy('name_seller')->get(['id','name_seller']);
         $this->drafters  = Drafter::orderBy('name_drafter')->get(['id','name_drafter']);
@@ -265,7 +267,7 @@ class ProjectsShow extends Component
                 $changes[] = "{$name}: {$fmt($prev,$k)} → {$fmt($v,$k)}";
             }
         }
-         sleep(2); // solo para probar que el spinner y overlay aparezcan
+       
 
         if ($changes) {
             ProjectComment::create([

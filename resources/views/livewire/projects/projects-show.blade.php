@@ -28,10 +28,10 @@
         </div>
 
         <div>
-          <flux:heading size="xl" level="1">
-            {{ $project->project_name }} {{ $project->building?->name_building ?? '—' }}
-          </flux:heading>
-          <flux:subheading size="lg" class="mb-6">{{ __('General project details') }}</flux:subheading>
+         <h3 class="text-1xl/5 font-bold text-base-content sm:truncate sm:text-2xl sm:tracking-tight">
+  {{ $project->project_name }}
+</h3>
+          <flux:subheading size="lg" class="mb-6">{{ __('Model') }} {{ $project->building?->name_building ?? '—' }}</flux:subheading>
         </div>
       </div>
     </div>
@@ -85,10 +85,11 @@
   <flux:separator variant="subtle" class="my-2" />
 
   {{-- ===== Tabs ===== --}}
-  <div role="tablist" class="tabs tabs-boxed tabs-lift" wire:loading.class="opacity-60 pointer-events-none">
+  <div role="tablist" class="tabs  tabs-box" wire:loading.class="opacity-60 pointer-events-none">
 
     {{-- ===================== TAB: General ===================== --}}
-    <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="General Information" checked />
+    <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="General Information"
+       @checked(request('tab', 'general') === 'general') />
     <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-5">
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -103,19 +104,22 @@
     </div>
 
     {{-- ===================== TAB: Phase 1 ===================== --}}
-    <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Phase 1" />
+    <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Phase 1"
+       @checked(request('tab') === 'phase1') />
     <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-5">
       @include('livewire.projects.partials.phase1')
     </div>
 
     {{-- ===================== TAB: Full Set ===================== --}}
-    <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Full Set" />
+   <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Full Set"
+       @checked(request('tab') === 'fullset') />
     <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-5">
       @include('livewire.projects.partials.fullset')
     </div>
 
     {{-- ===================== TAB: Notes ===================== --}}
-    <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Notes" />
+    <input type="radio" name="project_tabs" role="tab" class="tab" aria-label="Notes"
+       @checked(request('tab') === 'notes') />
     <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-5">
       <div class="rounded-md border border-base-300 bg-base-100 shadow-sm p-4">
         <flux:subheading size="md" class="font-semibold mb-3">Notes</flux:subheading>

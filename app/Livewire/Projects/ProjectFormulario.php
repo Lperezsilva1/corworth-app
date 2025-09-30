@@ -5,6 +5,7 @@ namespace App\Livewire\Projects;
 use Livewire\Component;
 use App\Models\{Project, Seller, Drafter, Building, Status};
 
+
 class ProjectFormulario extends Component
 {
     public ?int $projectId = null;

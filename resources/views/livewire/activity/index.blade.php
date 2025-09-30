@@ -1,52 +1,72 @@
-<div class="p-6">
-
-  <!-- Header -->
+<div class="p-6 font-[Inter] text-[15px]">
+  {{-- Header --}}
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
       <x-breadcrumbs :items="[
         ['label' => 'Home', 'url' => url('/dashboard')],
         ['label' => 'Activity']
       ]" />
-      <div>
-        <flux:heading size="xl" level="1">Activity</flux:heading>
-        <flux:subheading size="lg" class="mb-6">
-          Recent changes and comments on projects
-        </flux:subheading>
+
+      <div class="flex items-start gap-3 mt-1">
+        <svg class="h-6 w-6 text-primary/80 mt-0.5" xmlns="http://www.w3.org/2000/svg" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h12M3 17h8" />
+        </svg>
+        <div>
+          <flux:heading size="xl" level="1" class="font-semibold leading-tight">Activity</flux:heading>
+          <flux:subheading size="lg" class="mb-6 text-base-content/70">
+            Recent changes and comments on projects
+          </flux:subheading>
+        </div>
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center gap-3">
-      <!-- Date range (optional) -->
-      <input type="date" class="input input-bordered w-40" wire:model.live="from" />
-      <input type="date" class="input input-bordered w-40" wire:model.live="to" />
+    {{-- Filtros --}}
+    <div class="flex flex-wrap items-end gap-3">
+      <div>
+        <label class="block text-[12px] font-medium text-base-content/70 mb-1">From</label>
+        <input type="date" class="input input-bordered w-40" wire:model.live="from" />
+      </div>
+      <div>
+        <label class="block text-[12px] font-medium text-base-content/70 mb-1">To</label>
+        <input type="date" class="input input-bordered w-40" wire:model.live="to" />
+      </div>
+      <div>
+        <label class="block text-[12px] font-medium text-base-content/70 mb-1">Search</label>
+        <input
+          type="text"
+          wire:model.live="search"
+          placeholder="Search activity..."
+          class="input input-bordered w-64"
+        />
+      </div>
+      <div>
+        <label class="block text-[12px] font-medium text-base-content/70 mb-1">Per page</label>
+        <select class="select select-bordered w-28" wire:model.live="perPage">
+          <option value="10">10 / page</option>
+          <option value="15">15 / page</option>
+          <option value="25">25 / page</option>
+          <option value="50">50 / page</option>
+        </select>
+      </div>
 
-      <!-- Search -->
-      <input
-        type="text"
-        wire:model.live="search"
-        placeholder="Search activity..."
-        class="input input-bordered w-64"
-      />
-
-      <!-- Per page selector -->
-      <select class="select select-bordered w-28" wire:model.live="perPage">
-        <option value="10">10 / page</option>
-        <option value="15">15 / page</option>
-        <option value="25">25 / page</option>
-        <option value="50">50 / page</option>
-      </select>
+      <button type="button"
+              class="btn btn-ghost btn-sm mt-1"
+              wire:click="$set('search',''); $set('from', null); $set('to', null)">
+        Clear
+      </button>
     </div>
   </div>
 
   <flux:separator variant="subtle" />
 
-  <!-- Card with timeline -->
-  <div class="card bg-base-100 border border-base-200 shadow-sm">
-    <div class="card-body p-6">
+  {{-- Card con timeline --}}
+  <div class="rounded-xl bg-base-100 shadow-sm border border-base-200/80 dark:border-white/10">
+    <div class="p-6">
 
-      {{-- Timeline container --}}
+      {{-- Timeline --}}
       <div class="relative">
-        {{-- vertical line --}}
+        {{-- vertical spine --}}
         <div class="absolute left-[18px] top-2 bottom-2 w-[2px] bg-base-300/70 rounded-full"></div>
 
         <div class="space-y-5">
@@ -94,9 +114,10 @@
                   @endif
                 </div>
 
-                @if(!empty($a->body))
+              @php $pretty = $this->presentActivityBody($a); @endphp
+                @if(!empty($pretty))
                   <div class="mt-0.5 text-[13px] leading-5 text-base-content/70">
-                    {{ \Illuminate\Support\Str::limit($a->body, 160) }}
+                    {!! nl2br(e(\Illuminate\Support\Str::limit($pretty, 300))) !!}
                   </div>
                 @endif
 
@@ -111,9 +132,8 @@
         </div>
       </div>
 
-      <!-- Pagination -->
+      {{-- Pagination --}}
       <div class="mt-6">
-        {{-- Use plain links(): works with paginate, simplePaginate and cursorPaginate --}}
         {{ $activities->links() }}
       </div>
     </div>

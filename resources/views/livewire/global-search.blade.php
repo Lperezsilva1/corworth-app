@@ -35,7 +35,7 @@
   @endphp
 
   @if($hasAny)
-    <div class="absolute left-0 top-full mt-2 w-full rounded-lg border border-base-300 bg-base-100 shadow-lg z-50 overflow-hidden">
+    <div class="absolute mt-2 w-full max-w-md rounded-lg border border-base-300 bg-base-100 shadow-lg z-50 overflow-hidden">
       @php $loopIndex = 0; @endphp
 
       @foreach ($groups as $key => $title)
@@ -45,19 +45,12 @@
             @foreach($results[$key] as $row)
               @php $isSelected = ($loopIndex === $selectedIndex); @endphp
               <li>
-                <button
-                  type="button"
-                  class="w-full text-left px-3 py-2 text-sm rounded-md transition-colors
-                         hover:bg-base-200/60
-                         {{ $isSelected ? 'bg-base-200/80 ring-1 ring-base-300' : '' }}"
-                  wire:click="go('{{ $row['url'] }}')"
-                  wire:mouseenter="$set('selectedIndex', {{ $loopIndex }})"
-                >
+              <a  wire:navigate  href="{{ $row['url'] }}" class="block w-full text-left px-3 py-2 text-sm rounded-md transition-colors  hover:bg-base-200/60  {{ $isSelected ? 'bg-base-200/80 ring-1 ring-base-300' : '' }}"  wire:mouseenter="$set('selectedIndex', {{ $loopIndex }})" >
                   <div class="font-medium truncate">{{ $row['label'] }}</div>
                   @if(!empty($row['sub']))
-                    <div class="text-xs opacity-70 truncate">{{ $row['sub'] }}</div>
+                      <div class="text-xs opacity-70 truncate">{{ $row['sub'] }}</div>
                   @endif
-                </button>
+              </a>
               </li>
               @php $loopIndex++; @endphp
             @endforeach
