@@ -116,6 +116,14 @@
         <flux:menu class="w-[220px]">
           <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>Settings</flux:menu.item>
           <flux:menu.item :href="route('admin.users.index')" icon="users" wire:navigate>Admin → Users</flux:menu.item>
+           <flux:menu.item :href="route('settings.roles-permissions')" icon="users" wire:navigate>Permission</flux:menu.item>
+           <flux:menu.item :href="route('settings.roles')" icon="users" wire:navigate>Roles</flux:menu.item>
+           <flux:menu.item :href="route('settings.assign-roles')" icon="users" wire:navigate>Assign Roles</flux:menu.item>
+           
+      <flux:navlist.item :href="route('settings.rbac')" wire:navigate>
+    Roles & Permissions
+  </flux:navlist.item>
+
           <flux:menu.separator />
           <form method="POST" action="{{ route('logout') }}" class="w-full">
             @csrf
