@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Livewire\Projects;
-
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewProjectCreated;
 use Livewire\Component;
 use App\Models\{Project, Seller, Drafter, Building, Status};
 
@@ -143,6 +144,8 @@ class ProjectFormulario extends Component
 
         $this->dispatch('project-saved');
         $this->dispatch('pg:eventRefresh-projects-table-main');
+
+        
     }
 
     public function render()

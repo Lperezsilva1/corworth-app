@@ -31,48 +31,48 @@
     </div>
 
     <ul class="max-h-[60vh] overflow-y-auto divide-y divide-base-300">
-      @forelse($this->latestNotifications as $n)
-        @php
-          $data = $n->data ?? [];
-          $isUnread = is_null($n->read_at);
-          $title = $data['type'] === 'comment_added'
-            ? 'New comment on ' . ($data['project_name'] ?? 'project')
-            : ($data['title'] ?? 'Notification');
-          $desc = $data['body'] ?? '';
-          $url  = $data['url'] ?? '#';
-          $actor= $data['actor_name'] ?? null;
-        @endphp
-        <li class="p-3 hover:bg-base-200/50">
-          <div class="flex items-start gap-3">
-            <div class="mt-0.5">
-              <div class="w-2.5 h-2.5 rounded-full {{ $isUnread ? 'bg-primary' : 'bg-base-300' }}"></div>
-            </div>
-            <div class="min-w-0">
-              <div class="text-sm font-medium">
-                {{ $title }}
-                @if($actor) <span class="opacity-60 font-normal">• {{ $actor }}</span> @endif
-              </div>
-              @if($desc) <div class="text-xs opacity-80 line-clamp-2">{{ $desc }}</div> @endif
-              <div class="mt-2 flex gap-2">
-               <a wire:navigate
-                  href="{{ route('projects.show', ['project' => $data['project_id'], 'tab' => 'notes']) }}"
-                  class="btn btn-xs"
-                  wire:click="markAsRead('{{ $n->id }}')">
-                  Open
-                </a>
-                @if($isUnread)
-                  <button type="button" class="btn btn-xs btn-ghost"
-                          wire:click="markAsRead('{{ $n->id }}')">Mark read</button>
-                @endif
-              </div>
-              <div class="text-[11px] opacity-60 mt-1">{{ $n->created_at->diffForHumans() }}</div>
-            </div>
+  @forelse($this->items as $item)
+    <li class="p-3 hover:bg-base-200/50">
+      <div class="flex items-start gap-3">
+        <div class="mt-0.5">
+          <div class="w-2.5 h-2.5 rounded-full {{ $item['dot_class'] }}"></div>
+        </div>
+
+        <div class="min-w-0">
+          <div class="text-sm font-medium">
+            {{ $item['title'] }}
+            @if($item['actor'])
+              <span class="opacity-60 font-normal">• {{ $item['actor'] }}</span>
+            @endif
           </div>
-        </li>
-      @empty
-        <li class="p-4 text-sm opacity-70">No notifications yet.</li>
-      @endforelse
-    </ul>
+
+          @if($item['desc'])
+            <div class="text-xs opacity-80 line-clamp-2">{{ $item['desc'] }}</div>
+          @endif
+
+          <div class="mt-2 flex gap-2">
+            <a wire:navigate
+               href="{{ $item['url'] }}"
+               class="btn btn-xs"
+               wire:click="markAsRead('{{ $item['id'] }}')">
+              Open
+            </a>
+
+            @if($item['is_unread'])
+              <button type="button" class="btn btn-xs btn-ghost"
+                      wire:click="markAsRead('{{ $item['id'] }}')">Mark read</button>
+            @endif
+          </div>
+
+          <div class="text-[11px] opacity-60 mt-1">{{ $item['created_h'] }}</div>
+        </div>
+      </div>
+    </li>
+  @empty
+    <li class="p-4 text-sm opacity-70">No notifications yet.</li>
+  @endforelse
+</ul>
+
   </div>
 </div>
 

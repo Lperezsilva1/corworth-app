@@ -37,7 +37,8 @@ class CommentAddedNotification extends Notification implements ShouldQueue
             'body'         => $this->commentBody,
             'actor_id'     => $this->actorId,
             'actor_name'   => $this->actorName,
-            'url'          => route('projects.show', $this->projectId) . '#comments', // ajusta tu ruta
+            // opcional: tu Blade hoy no lo usa, pero no estorba
+           'url'       => route('projects.show', ['project' => $this->projectId, 'tab' => 'notes']),
         ];
     }
 
