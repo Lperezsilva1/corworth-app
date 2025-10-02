@@ -25,11 +25,10 @@ final class ProjectsTable extends PowerGridComponent
 
     public function setUp(): array
     {
-        // Orden por defecto solo si aún no hay uno activo/persistido
-        if (empty($this->sortField)) {
-            $this->sortField     = 'projects.id';   // o 'projects.created_at'
+          $this->sortField     = 'projects.id';   // o 'projects.created_at'
             $this->sortDirection = 'desc';
-        }
+        // Orden por defecto solo si aún no hay uno activo/persistido
+        
 
         $this->showCheckBox();
 
@@ -219,6 +218,7 @@ final class ProjectsTable extends PowerGridComponent
             // Índice global (no reinicia por página)
             Column::make('#', 'id')
                 ->sortable(false)
+                
                 ->bodyAttribute('text-center'),
 
             // Muestra HTML pero ordena por nombre real del proyecto

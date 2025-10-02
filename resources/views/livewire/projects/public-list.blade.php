@@ -1,100 +1,115 @@
-{{-- Minimal Pro Table con Seller (transparente) --}}
-<section class="max-w-6xl mx-auto px-6 py-8 font-[Inter] select-none" wire:poll.30s>
+{{-- Smart TV Style: Open / Not-Approved Projects --}}
+<section class="w-full h-full select-none" wire:poll.30s>
   {{-- Header --}}
-  <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-    <div>
-      <h1 class="text-[28px] sm:text-[32px] font-semibold leading-tight tracking-tight">Open Projects</h1>
-      <p class="text-sm text-base-content/60">Pending • Working • Awaiting Approval (public)</p>
-    </div>
+  <header class="mb-10">
+    <h1 class="tv-title flex items-center gap-3">
+      Open Projects
+      <span class="inline-block h-[12px] w-[12px] rounded-full"
+            style="background: radial-gradient(circle at 30% 30%, var(--accent2), var(--accent));
+                   box-shadow: 0 0 20px rgba(34,211,238,.65);"></span>
+    </h1>
+    <p class="tv-sub">Pending • Working • Awaiting Approval • Deviated • Cancelled</p>
+  </header>
 
-    {{-- buscador opcional --}}
-    @isset($q)
-      <div class="w-full sm:w-80">
-        <input type="text" wire:model.live="q"
-               placeholder="Search by project, building or seller…"
-               class="input input-bordered w-full rounded-xl" />
+  @php
+    $notApproved = ['pending','working','awaiting_approval','deviated','cancelled'];
+
+    // ✅ ahora "pending" es gris
+    $badge = fn($key) => match($key){
+      'pending'           => 'bg-gray-400 text-black',
+      'working'           => 'bg-sky-500 text-white',
+      'awaiting_approval' => 'bg-yellow-400 text-black',
+      'deviated'          => 'bg-orange-500 text-white',
+      'cancelled'         => 'bg-rose-600 text-white',
+      default             => 'bg-slate-600 text-white',
+    };
+
+    $leftBar = fn($key) => match($key){
+      'pending'           => 'from-gray-400/70 to-gray-400/0',
+      'working'           => 'from-sky-400/70 to-sky-400/0',
+      'awaiting_approval' => 'from-yellow-400/70 to-yellow-400/0',
+      'deviated'          => 'from-orange-400/70 to-orange-400/0',
+      'cancelled'         => 'from-rose-500/70 to-rose-500/0',
+      default             => 'from-slate-400/70 to-slate-400/0',
+    };
+  @endphp
+
+  {{-- Cabecera de columnas --}}
+  <div class="hidden md:grid grid-cols-12 text-[12px] uppercase tracking-wider text-neutral-300/70 mb-3 pl-2 pr-4">
+    <div class="col-span-1"></div>
+    <div class="col-span-5">Project</div>
+    <div class="col-span-2"></div>
+    <div class="col-span-2">Seller</div>
+    <div class="col-span-2">Status</div>
+  </div>
+
+  {{-- Lista scrollable --}}
+  <div class="h-[calc(100%-140px)] overflow-auto pr-2">
+    @forelse($projects as $p)
+      @php
+        $key = strtolower($p->status?->key ?? 'draft');
+        if (!in_array($key, $notApproved)) continue;
+
+        $name   = $p->project_name;
+        $bld    = $p->building?->name_building ?? '—';
+        $seller = $p->seller?->name_seller ?? $p->seller?->name ?? '—';
+        $label  = \Illuminate\Support\Str::of($p->status?->label ?? 'Draft')->replace('_',' ')->title();
+      @endphp
+
+      <div
+        class="group relative grid grid-cols-12 items-center gap-4
+               rounded-[20px] px-8 h-[92px] mb-5
+               bg-neutral-900/55 border border-neutral-800/90
+               backdrop-blur-[6px]
+               shadow-[0_1px_0_rgba(255,255,255,0.04)_inset,0_20px_40px_rgba(0,0,0,0.35)]
+               hover:bg-neutral-800/60 hover:border-neutral-700 transition-all"
+      >
+        {{-- barra lateral por estado --}}
+        <span class="pointer-events-none absolute left-0 top-0 h-full w-[7px] rounded-l-[20px]
+                     bg-gradient-to-b {{ $leftBar($key) }}"></span>
+
+        {{-- Inicial --}}
+        <div class="col-span-1 flex justify-center">
+          <div class="w-12 h-12 rounded-[14px]
+                      bg-neutral-800/80 border border-neutral-700/70
+                      text-neutral-100 font-bold text-[16px] flex items-center justify-center
+                      shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]">
+            {{ strtoupper(mb_substr($name,0,1)) }}
+          </div>
+        </div>
+
+        {{-- Project --}}
+        <div class="col-span-5 min-w-0">
+          <div class="font-semibold text-[20px] leading-tight truncate">{{ $name }}</div>
+        
+        </div>
+
+        {{-- Building --}}
+        <div class="col-span-2 min-w-0">
+          <div class="text-[16px] truncate">{{ $bld }}</div>
+        </div>
+
+        {{-- Seller --}}
+        <div class="col-span-2 min-w-0">
+          <div class="text-[16px] truncate">{{ $seller }}</div>
+        </div>
+
+        {{-- Status pill --}}
+        <div class="col-span-2 flex justify-end">
+          <span class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[14px] font-extrabold {{ $badge($key) }}
+                       shadow-[0_6px_12px_rgba(0,0,0,.35)]">
+            <span class="inline-block h-2.5 w-2.5 rounded-full bg-black/30 mix-blend-multiply"></span>
+            {{ $label }}
+          </span>
+        </div>
       </div>
-    @endisset
+    @empty
+      <div class="w-full h-full flex items-center justify-center text-neutral-400">No open projects.</div>
+    @endforelse
   </div>
 
-  {{-- Tabla --}}
-  <div class="rounded-2xl border border-base-300/50 bg-white/70 shadow-sm backdrop-blur-sm overflow-hidden">
-    <div class="max-h-[68vh] overflow-auto">
-      <table class="table w-full">
-        <thead class="sticky top-0 z-10 bg-white/60 backdrop-blur-sm border-b border-base-300/50">
-          <tr class="text-[11px] uppercase tracking-wide text-base-content/60">
-            <th class="w-10"></th>
-            <th class="px-6 py-3 text-left">Project</th>
-            <th class="py-3 text-left">Building</th>
-            <th class="py-3 text-left">Seller</th>
-            <th class="py-3 text-left w-40">Status</th>
-          </tr>
-        </thead>
-
-        <tbody class="[&>tr]:border-t [&>tr]:border-base-300/40">
-          @forelse($projects as $p)
-            @php
-              $name   = $p->project_name;
-              $bld    = $p->building?->name_building ?? '—';
-              $seller = $p->seller?->name_seller ?? $p->seller?->name ?? '—';
-              $key    = strtolower($p->status?->key ?? 'draft');
-              $label  = $p->status?->label ?? 'Draft';
-
-              $badge = match ($key) {
-                'working'   => 'border-sky-300 text-sky-700 bg-sky-50/70',
-                'pending'   => 'border-amber-300 text-amber-700 bg-amber-50/70',
-                'approved'  => 'border-emerald-300 text-emerald-700 bg-emerald-50/70',
-                'cancelled' => 'border-rose-300 text-rose-700 bg-rose-50/70',
-                default     => 'border-slate-300 text-slate-700 bg-slate-50/70',
-              };
-            @endphp
-
-            <tr class="hover:bg-white/40 transition-colors">
-              {{-- avatar inicial --}}
-              <td class="py-3">
-                <div class="avatar placeholder">
-                  <div class="w-8 h-8 rounded-md bg-base-200/70 text-base-content/70 text-xs flex items-center justify-center">
-                    {{ strtoupper(mb_substr($name,0,1)) }}
-                  </div>
-                </div>
-              </td>
-
-              {{-- nombre + id --}}
-              <td class="px-6 py-3">
-                @if (Route::has('projects.show'))
-                  <a href="{{ route('projects.show', $p->id) }}" class="font-medium hover:text-primary transition-colors">
-                    {{ $name }}
-                  </a>
-                @else
-                  <span class="font-medium">{{ $name }}</span>
-                @endif
-                <div class="text-[11px] text-base-content/60">#{{ $p->id }}</div>
-              </td>
-
-              {{-- building --}}
-              <td class="text-sm">{{ $bld }}</td>
-
-              {{-- seller --}}
-              <td class="text-sm">{{ $seller }}</td>
-
-              {{-- status --}}
-              <td>
-                <span class="inline-flex items-center rounded-full border {{ $badge }} px-3 py-0.5 text-[11px]">
-                  {{ \Illuminate\Support\Str::of($label)->replace('_',' ')->title() }}
-                </span>
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="5" class="py-14 text-center text-base-content/60">No open projects.</td>
-            </tr>
-          @endforelse
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="text-xs text-base-content/60 text-right">
+  {{-- Footer pequeño --}}
+  <div class="mt-4 text-[12px] text-neutral-400 text-right">
     Auto-refresh every 30s • {{ now()->format('M d, Y H:i') }}
   </div>
 </section>

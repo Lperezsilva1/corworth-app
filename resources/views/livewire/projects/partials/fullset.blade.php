@@ -44,7 +44,7 @@
       <dd class="sm:col-span-2">
         @if($editing)
           <flux:field>
-            <flux:select id="fullset_drafter_id" wire:model.defer="fullset_drafter_id" searchable placeholder="— Select drafter —" class="w-full">
+            <flux:select id="fullset_drafter_id" wire:model.defer="fullset_drafter_id" searchable placeholder="" class="w-full">
               <flux:select.option value="">— Select drafter —</flux:select.option>
               @foreach($drafters as $d)
                 <flux:select.option value="{{ $d->id }}">{{ $d->name_drafter }}</flux:select.option>

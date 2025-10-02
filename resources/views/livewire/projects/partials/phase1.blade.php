@@ -38,13 +38,13 @@
     {{-- Drafter --}}
     <div class="px-15 py-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
       <dt>
-        <div class="text-sm font-medium text-base-content">                 Drafter</div>
+        <div class="text-sm font-medium text-base-content">Drafter</div>
         <div class="text-xs text-base-content/60">Assign the drafter in charge of this phase.</div>
       </dt>
       <dd class="sm:col-span-2 pl-6">
         @if($editing)
           <flux:field>
-            <flux:select id="phase1_drafter_id" wire:model.defer="phase1_drafter_id" searchable placeholder="— Select drafter —" class="w-full">
+            <flux:select id="phase1_drafter_id" wire:model.defer="phase1_drafter_id" searchable placeholder="" class="w-full">
               <flux:select.option value="">— Select drafter —</flux:select.option>
               @foreach($drafters as $d)
                 <flux:select.option value="{{ $d->id }}">{{ $d->name_drafter }}</flux:select.option>
@@ -72,6 +72,13 @@
         @else
           <span class="text-base-content/60">—</span>
         @endif
+        @if($editing && $project->phase1Status?->key !== 'complete' && $project->phase1_drafter_id && $project->phase1_start_date)
+    <flux:button size="sm" @click="$dispatch('open-phase1-complete-modal')">
+        Mark Phase 1 Complete
+    </flux:button>
+@endif
+
+<flux:error name="phase1_status_id" class="text-xs text-error mt-1" />
       </dd>
     </div>
 

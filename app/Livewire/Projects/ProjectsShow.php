@@ -115,50 +115,62 @@ class ProjectsShow extends Component
         $this->other_notes = $p->other_notes;
     }
 
-    public function rules(): array
-    {
-        return [
-            // existentes
-            'building_id'        => ['nullable','integer','exists:buildings,id'],
-            'seller_id'          => ['nullable','integer','exists:sellers,id'],
+   public function rules(): array
+{
+    $p = $this->project; // Modelo ya cargado
 
-            'phase1_drafter_id'  => ['nullable','integer','exists:drafters,id'],
-            'phase1_status_id'   => ['nullable','integer','exists:statuses,id'], // ID
-            'phase1_start_date'  => ['nullable','date'],
-            'phase1_end_date'    => ['nullable','date','after_or_equal:phase1_start_date'],
+    return [
+        // FKs principales
+        'building_id' => ['nullable','integer','exists:buildings,id'],
+        'seller_id'   => ['nullable','integer','exists:sellers,id'],
 
-            'fullset_drafter_id' => ['nullable','integer','exists:drafters,id'],
-            'fullset_status_id'  => ['nullable','integer','exists:statuses,id'], // ID
-            'fullset_start_date' => ['nullable','date'],
-            'fullset_end_date'   => ['nullable','date','after_or_equal:fullset_start_date'],
+        // === Phase 1 ===
+        // Drafter: si ya hubo uno asignado, ahora es required; si nunca se asignó, puede ser null
+        'phase1_drafter_id' => [
+            $p && $p->phase1_drafter_id ? 'required' : 'nullable',
+            'integer',
+            'exists:drafters,id',
+        ],
+        // Status/fechas: mantén tu lógica actual (puedes dejarlos nullable si no se editan aquí)
+        'phase1_status_id'  => ['nullable','integer','exists:statuses,id'],
+        'phase1_start_date' => ['nullable','date'],
+        'phase1_end_date'   => ['nullable','date','after_or_equal:phase1_start_date'],
 
-            // FK a statuses.id
-           
-            'notes'              => ['nullable','string'],
+        // === Full Set ===
+        'fullset_drafter_id' => [
+            $p && $p->fullset_drafter_id ? 'required' : 'nullable',
+            'integer',
+            'exists:drafters,id',
+        ],
+        'fullset_status_id'  => ['nullable','integer','exists:statuses,id'],
+        'fullset_start_date' => ['nullable','date'],
+        'fullset_end_date'   => ['nullable','date','after_or_equal:fullset_start_date'],
 
-            // 7 ítems
-            'seller_door_ok'              => ['nullable','boolean'],
-            'seller_accessories_ok'       => ['nullable','boolean'],
-            'seller_exterior_finish_ok'   => ['nullable','boolean'],
-            'seller_plumbing_fixture_ok'  => ['nullable','boolean'],
-            'seller_utility_direction_ok' => ['nullable','boolean'],
-            'seller_electrical_ok'        => ['nullable','boolean'],
-            'other_ok'                    => ['nullable','boolean'],
+        // Otros
+        'notes' => ['nullable','string'],
 
-            // Notas condicionales
-            'seller_door_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_door_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Puerta.'); }],
-            'seller_accessories_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_accessories_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Accesorios.'); }],
-            'seller_exterior_finish_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_exterior_finish_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Exterior Finish.'); }],
-            'seller_plumbing_fixture_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_plumbing_fixture_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Plumbing Fixture.'); }],
-            'seller_utility_direction_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_utility_direction_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Utility Direction.'); }],
-            'seller_electrical_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_electrical_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Eléctrica.'); }],
+        // 7 ítems (booleans)
+        'seller_door_ok'              => ['nullable','boolean'],
+        'seller_accessories_ok'       => ['nullable','boolean'],
+        'seller_exterior_finish_ok'   => ['nullable','boolean'],
+        'seller_plumbing_fixture_ok'  => ['nullable','boolean'],
+        'seller_utility_direction_ok' => ['nullable','boolean'],
+        'seller_electrical_ok'        => ['nullable','boolean'],
+        'other_ok'                    => ['nullable','boolean'],
 
-            // Otro
-            'other_label' => ['nullable','string','max:120'],
-            'other_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->other_ok === false && trim((string)$val)==='') $fail('Describe qué falta en “Otro”.'); }],
-        ];
-    }
+        // Notas condicionales
+        'seller_door_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_door_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Puerta.'); }],
+        'seller_accessories_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_accessories_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Accesorios.'); }],
+        'seller_exterior_finish_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_exterior_finish_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Exterior Finish.'); }],
+        'seller_plumbing_fixture_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_plumbing_fixture_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Plumbing Fixture.'); }],
+        'seller_utility_direction_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_utility_direction_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Utility Direction.'); }],
+        'seller_electrical_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->seller_electrical_ok === false && trim((string)$val)==='') $fail('Describe qué falta en Eléctrica.'); }],
 
+        // Otro
+        'other_label' => ['nullable','string','max:120'],
+        'other_notes' => ['nullable','string','max:2000', function($attr,$val,$fail){ if($this->other_ok === false && trim((string)$val)==='') $fail('Describe qué falta en “Otro”.'); }],
+    ];
+}
     protected function prepareForValidation($attributes)
     {
         // Normaliza selects/strings vacíos a null
@@ -189,6 +201,10 @@ class ProjectsShow extends Component
     {
         $data = $this->validate();
         unset($data['general_status']); // ✅ evita sobreescribir el estado
+        unset($data['phase1_start_date'], $data['phase1_end_date']); // ✅ evita limpiar fechas
+        unset($data['phase1_status_id']); // ✅ evita sobreescribir el estado de pahse 1
+        unset($data['fullset_start_date'], $data['fullset_end_date']); // idem si aplica
+        unset($data['fullset_status_id']); // ✅ evita sobreescribir el estado de Full Set
         // Campos a auditar (incluye los 7 ítems y FKs de fase como IDs)
         $track = [
             'building_id','seller_id',
