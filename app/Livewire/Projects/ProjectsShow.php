@@ -347,6 +347,7 @@ class ProjectsShow extends Component
         }
 
         $p->general_status = $approvedId;
+        $p->approved_at    = now(); // 👈 aquí sellamos la fecha
         $p->saveQuietly();
 
         // Auditar en comentarios

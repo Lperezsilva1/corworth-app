@@ -28,7 +28,7 @@ use App\Livewire\Settings\RolesIndex;      // CRUD de roles
 use App\Livewire\Settings\AssignRoles;     // Asignar roles a usuarios
 use App\Livewire\Settings\RbacContainer;
 
-Route::get('/', fn () => view('welcome'))->name('home');
+Route::redirect('/', '/dashboard');
 
 Route::get('/projects/public', PublicList::class)->name('projects.public');
 

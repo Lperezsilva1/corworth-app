@@ -10,37 +10,71 @@ class PublicList extends Component
     public string $q = '';
     public int $limit = 80; // cuantos mostrar en el monitor
 
+    /**
+     * Base query:
+     *  - Muestra todos los que NO son 'approved' ni 'cancelled'
+     *  - Incluye 'approved' SOLO si approved_at >= now()-2d
+     *  - Excluye siempre 'cancelled'
+     *  - Aplica búsqueda por nombre de proyecto y building
+     */
     protected function nonCompletedQuery()
     {
-        $excludeIds = Status::whereIn('key', ['approved', 'cancelled'])
-            ->pluck('id')
-            ->filter()
-            ->values()
-            ->all();
+        // Cachea los IDs por key
+        $statusIds   = Status::pluck('id', 'key')->all();
+        $approvedId  = $statusIds['approved']  ?? null;
+        $cancelledId = $statusIds['cancelled'] ?? null;
+
+        $twoDaysAgo = now()->subDays(2);
 
         return Project::query()
-            // 👇 Cargar seller + building + status
-            // Nota: si en tu tabla sellers el nombre es "name" (no "name_seller"),
-            // cambia a ->with(['seller:id,name'])
+            // Cargar relaciones mínimas necesarias
             ->with([
                 'building:id,name_building',
                 'status:id,label,key',
                 'seller:id,name_seller',
             ])
-            ->when(!empty($excludeIds), function ($q) use ($excludeIds) {
-                $q->where(function ($qq) use ($excludeIds) {
-                    $qq->whereNull('general_status')
-                       ->orWhereNotIn('general_status', $excludeIds);
+            // Lógica central:
+            // ( general_status IS NULL )
+            // OR ( general_status NOT IN (approved, cancelled) )
+            // OR ( general_status = approved AND approved_at >= now()-2d )
+            ->where(function ($q) use ($approvedId, $cancelledId, $twoDaysAgo) {
+
+                // 1) Sin status
+                $q->whereNull('general_status');
+
+                // 2) Todos los NO approved/cancelled
+                $q->orWhere(function ($qq) use ($approvedId, $cancelledId) {
+                    // armamos la lista a excluir
+                    $exclude = array_filter([$approvedId, $cancelledId], fn($v) => !is_null($v));
+                    if (!empty($exclude)) {
+                        $qq->whereNotIn('general_status', $exclude);
+                    } else {
+                        // si no hay ids, no excluimos nada aquí
+                        $qq->whereRaw('1=1');
+                    }
                 });
+
+                // 3) Approved recientes (<= 2 días)
+                if (!is_null($approvedId)) {
+                    $q->orWhere(function ($qq) use ($approvedId, $twoDaysAgo) {
+                        $qq->where('general_status', $approvedId)
+                           ->where('approved_at', '>=', $twoDaysAgo);
+                    });
+                }
             })
+            // Búsqueda
             ->when($this->q !== '', function ($q) {
                 $q->where(function ($qq) {
-                    $qq->where('project_name', 'like', '%'.$this->q.'%')
-                       ->orWhereHas('building', fn($b) => $b->where('name_building', 'like', '%'.$this->q.'%'));
-                    // ⚠️ Si quieres buscar por seller, DIME cómo se llama la columna:
-                    // - si es "name_seller": descomenta esta línea:
-                    // ->orWhereHas('seller', fn($s) => $s->where('name_seller', 'like', '%'.$this->q.'%'));
-                    // - si es "name": usa: ->orWhereHas('seller', fn($s) => $s->where('name', 'like', '%'.$this->q.'%'));
+                    $term = '%'.$this->q.'%';
+
+                    $qq->where('project_name', 'like', $term)
+                       ->orWhereHas('building', fn($b) => $b->where('name_building', 'like', $term));
+
+                    // Si quieres buscar por seller y la columna es "name_seller", descomenta:
+                    // ->orWhereHas('seller', fn($s) => $s->where('name_seller', 'like', $term));
+
+                    // Si la columna del seller es "name", usa:
+                    // ->orWhereHas('seller', fn($s) => $s->where('name', 'like', $term));
                 });
             });
     }
@@ -52,13 +86,13 @@ class PublicList extends Component
         $projects = $query
             ->orderByDesc('updated_at')   // lo más reciente arriba para monitor
             ->limit($this->limit)
-            // 👇 Incluimos seller_id para que el belongsTo se resuelva bien
             ->get([
                 'id',
                 'project_name',
                 'building_id',
-                'seller_id',        // 🔴 IMPORTANTE
+                'seller_id',        // importante para belongsTo
                 'general_status',
+                'approved_at',      // 👈 necesario para la lógica de 2 días y/o mostrar en la vista
                 'created_at',
                 'updated_at',
             ]);
@@ -74,7 +108,11 @@ class PublicList extends Component
             'draft'   => $projects->whereNull('general_status')->count(),
         ];
 
+    
+
         return view('livewire.projects.public-list', compact('projects','stats'))
             ->layout('layouts.public', ['title' => 'Open Projects']);
+
+           
     }
 }

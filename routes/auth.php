@@ -24,5 +24,5 @@ Route::middleware('auth')->group(function () {
 
     Volt::route('confirm-password', 'auth.confirm-password')->name('password.confirm');
 });
-Volt::route('register', 'auth.register')->name('register');
+//Volt::route('register', 'auth.register')->name('register');
 Route::post('logout', App\Livewire\Actions\Logout::class)->name('logout');

@@ -8,30 +8,36 @@
             style="background: radial-gradient(circle at 30% 30%, var(--accent2), var(--accent));
                    box-shadow: 0 0 20px rgba(34,211,238,.65);"></span>
     </h1>
-    <p class="tv-sub">Pending • Working • Awaiting Approval • Deviated • Cancelled</p>
+    <p class="tv-sub">Pending • Working • Awaiting Approval • Deviated • Cancelled • <span class="font-semibold">Approved (last 2 days)</span></p>
   </header>
 
   @php
-    $notApproved = ['pending','working','awaiting_approval','deviated','cancelled'];
+    // Estados base que siempre se muestran
+    $baseVisible = ['pending','working','awaiting_approval','deviated','cancelled'];
 
-    // ✅ ahora "pending" es gris
+    // Badges por estado (incluye approved)
     $badge = fn($key) => match($key){
       'pending'           => 'bg-gray-400 text-black',
       'working'           => 'bg-sky-500 text-white',
       'awaiting_approval' => 'bg-yellow-400 text-black',
       'deviated'          => 'bg-orange-500 text-white',
       'cancelled'         => 'bg-rose-600 text-white',
+      'approved'          => 'bg-green-500 text-white',   // ✅ NUEVO
       default             => 'bg-slate-600 text-white',
     };
 
+    // Barra lateral por estado (incluye approved)
     $leftBar = fn($key) => match($key){
       'pending'           => 'from-gray-400/70 to-gray-400/0',
       'working'           => 'from-sky-400/70 to-sky-400/0',
       'awaiting_approval' => 'from-yellow-400/70 to-yellow-400/0',
       'deviated'          => 'from-orange-400/70 to-orange-400/0',
       'cancelled'         => 'from-rose-500/70 to-rose-500/0',
+      'approved'          => 'from-green-500/70 to-green-500/0', // ✅ NUEVO
       default             => 'from-slate-400/70 to-slate-400/0',
     };
+
+    $recentLimit = now()->subDays(2);
   @endphp
 
   {{-- Cabecera de columnas --}}
@@ -47,13 +53,22 @@
   <div class="h-[calc(100%-140px)] overflow-auto pr-2">
     @forelse($projects as $p)
       @php
-        $key = strtolower($p->status?->key ?? 'draft');
-        if (!in_array($key, $notApproved)) continue;
+        $key     = strtolower($p->status?->key ?? 'draft');
+        $name    = $p->project_name;
+        $bld     = $p->building?->name_building ?? '—';
+        $seller  = $p->seller?->name_seller ?? $p->seller?->name ?? '—';
+        $label   = \Illuminate\Support\Str::of($p->status?->label ?? 'Draft')->replace('_',' ')->title();
 
-        $name   = $p->project_name;
-        $bld    = $p->building?->name_building ?? '—';
-        $seller = $p->seller?->name_seller ?? $p->seller?->name ?? '—';
-        $label  = \Illuminate\Support\Str::of($p->status?->label ?? 'Draft')->replace('_',' ')->title();
+        // Lógica de visibilidad:
+        // - Estados base visibles siempre
+        // - Approved SOLO si approved_at existe y es reciente (>= now()-2d)
+        $show = in_array($key, $baseVisible, true);
+
+        if ($key === 'approved') {
+          $show = $p->approved_at && $p->approved_at->gte($recentLimit);
+        }
+
+        if (! $show) continue;
       @endphp
 
       <div
@@ -81,7 +96,11 @@
         {{-- Project --}}
         <div class="col-span-5 min-w-0">
           <div class="font-semibold text-[20px] leading-tight truncate">{{ $name }}</div>
-        
+          @if($key === 'approved' && $p->approved_at)
+            <div class="text-[12px] text-green-400/90">
+              Approved {{ $p->approved_at->diffForHumans() }}
+            </div>
+          @endif
         </div>
 
         {{-- Building --}}

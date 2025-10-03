@@ -118,10 +118,10 @@ new #[Layout('components.layouts.auth')] class extends Component {
         </div>
     </form>
 
-    @if (Route::has('register'))
+   
         <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-600 dark:text-zinc-400">
             <span>{{ __('Don\'t have an account?') }}</span>
             <p> Request one from the Design Department</p>
         </div>
-    @endif
+    
 </div>
