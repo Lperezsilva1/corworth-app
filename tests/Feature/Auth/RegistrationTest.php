@@ -1,26 +1,34 @@
 <?php
 
-use Livewire\Volt\Volt;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
-test('registration screen can be rendered', function () {
-    $response = $this->get('/register');
-
-    $response->assertStatus(200);
+test('public registration routes are unavailable', function () {
+    $this->get('/register')->assertStatus(404);
+    $this->post('/register')->assertStatus(404);
 });
 
-test('new users can register', function () {
-    $response = Volt::test('auth.register')
-        ->set('name', 'Test User')
-        ->set('email', 'test@example.com')
-        ->set('password', 'password')
-        ->set('password_confirmation', 'password')
-        ->call('register');
+test('non-admin cannot access admin user creation', function () {
+    $user = User::factory()->create();
+    $user->markEmailAsVerified(); // si proteges admin con 'verified'
 
-    $response
-        ->assertHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+    $this->actingAs($user)
+        ->get('/admin/users/create')
+        ->assertStatus(403);
+});
 
-    $this->assertAuthenticated();
+test('admin can access admin user creation form', function () {
+    $admin = User::factory()->create();
+  
+
+    // Asegura que exista el rol y asígnalo
+    Role::firstOrCreate(['name' => 'Admin']);
+    $admin->assignRole('Admin');
+
+    $this->actingAs($admin)
+        ->get('/admin/users/create')
+        ->assertOk();
 });
