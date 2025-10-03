@@ -60,6 +60,7 @@ class Project extends Model
         'phase1_status_id'            => 'integer',
         'fullset_status_id'           => 'integer',
         'deleted_at'                  => 'datetime',
+        'approved_at'                 => 'datetime',
     ];
 
     /** Defaults seguros por key + auto-estado/fechas */
