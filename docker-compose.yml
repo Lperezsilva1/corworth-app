@@ -1,0 +1,34 @@
+services:
+  app:
+    build: .
+    # container_name: laravel_app   # ← quita container_name (opcional)
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - db
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db              # ← usa el nombre del servicio
+      DB_PORT: 3306
+      DB_DATABASE: projects_app
+      DB_USERNAME: laravel
+      DB_PASSWORD: secret
+
+  db:
+    image: mysql:8
+    # container_name: laravel_db    # ← quita container_name
+    restart: always
+    environment:
+      MYSQL_DATABASE: projects_app
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"            # en tu host seguirá siendo 3307 si lo necesitas
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
