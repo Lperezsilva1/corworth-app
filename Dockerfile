@@ -22,7 +22,8 @@ RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framewor
 
 # INSTALAR deps y COMPILAR assets (esto genera public/build)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader \
- && ( [ -f package.json ] && npm ci && npm run build || true )
+ && npm ci --no-audit --no-fund \
+ && npm run build
 
 # Arranque: .env si falta, key, migraciones, cachés y server
 CMD ["sh","-lc","php -r \"file_exists('.env') || copy('.env.example','.env');\" \
