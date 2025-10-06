@@ -97,14 +97,7 @@
         {{-- Delta con flecha y color --}}
         @if($delta !== '')
           <div class="stat-desc flex items-center gap-1 {{ $isNeg ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
-              @if($isNeg)
-                <path d="M19 9l-7 7-7-7"/>
-              @else
-                <path d="M5 15l7-7 7 7"/>
-              @endif
-            </svg>
-            <span>{{ $delta }}</span>
+           
           </div>
         @endif
       </div>
