@@ -53,7 +53,40 @@
               Projects
             </flux:navlist.item>
           @endcan
+
+
+
+
+            {{-- Projects (project.viewAny) --}}
+        @can('activity.view')
+          <flux:navlist.item
+            icon="folder-git-2"
+            :href="route('activity.index')"
+            :current="request()->routeIs('activity.index')"
+            class="{{ request()->routeIs('activity.index') ? 'nav-active' : '' }}"
+            wire:navigate
+          >
+            {{ __('Activity') }}
+          </flux:navlist.item>
+        @else
+          <flux:navlist.item
+            icon="folder-git-2"
+            :disabled="true"
+            :current="request()->routeIs('activity.index')"
+            class="nav-disabled"
+          >
+            {{ __('Activity') }}
+          </flux:navlist.item>
+        @endcan
+
+
+
+
+
+          
         </flux:navlist.group>
+
+        
 
         <flux:navlist.group expandable heading="Master" class="hidden lg:grid">
 
@@ -122,28 +155,7 @@
 
       <flux:spacer />
 
-      <flux:navlist variant="outline">
-        {{-- Activity (activity.view) --}}
-        @can('activity.view')
-          <flux:navlist.item
-            icon="folder-git-2"
-            :href="route('activity.index')"
-            :current="request()->routeIs('activity.index')"
-            wire:navigate
-          >
-            {{ __('Activity') }}
-          </flux:navlist.item>
-        @else
-          <flux:navlist.item
-            icon="folder-git-2"
-            :disabled="true"
-            :current="request()->routeIs('activity.index')"
-            class="nav-disabled"
-          >
-            {{ __('Activity') }}
-          </flux:navlist.item>
-        @endcan
-      </flux:navlist>
+     
     </flux:sidebar>
 
     {{-- ===================== HEADER MÓVIL (solo mobile) ===================== --}}
